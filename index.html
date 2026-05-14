@@ -11,192 +11,210 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#0a0d1a;--navy2:#0f1425;--navy3:#151c35;--navy4:#1c2540;--navy5:#243058;
-  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
-  --text:#eef0f8;--text2:#7a82a8;--text3:#3d4466;
-  --accent:#2563eb;--accent2:#3b82f6;
-  --green:#10b981;--green-dim:rgba(16,185,129,0.12);
-  --amber:#f59e0b;--red:#ef4444;--red-dim:rgba(239,68,68,0.1);
-  --purple:#8b5cf6;
+  --navy:#0d1b3e;--navy2:#112252;--navy3:#1a2f6b;
+  --bg:#ffffff;--bg2:#f4f6fb;--bg3:#e8ecf7;
+  --border:rgba(13,27,62,0.1);--border2:rgba(13,27,62,0.2);
+  --text:#0d1b3e;--text2:#4a5580;--text3:#8a94b8;
+  --green:#0a7c4e;--green-dim:rgba(10,124,78,0.08);
+  --amber:#92400e;--amber-dim:rgba(146,64,14,0.08);
+  --red:#991b1b;--red-dim:rgba(153,27,27,0.08);
+  --blue:#1d4ed8;--blue-dim:rgba(29,78,216,0.08);
+  --purple:#5b21b6;--purple-dim:rgba(91,33,182,0.08);
 }
-html{font-size:14px}
-body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+html{font-size:15px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-thumb{background:var(--navy4);border-radius:4px}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:4px}
 button{font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s}
 input,textarea,select{font-family:'DM Sans',sans-serif}
-input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)!important}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--navy)!important}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useCallback, useMemo, useEffect } = React;
+const {useState,useEffect,useMemo,useCallback} = React;
+
+const API = 'https://script.google.com/macros/s/AKfycbwjv-iu2R3Qu9C64SO1B-aSS44F1CvK4ZZ6B9hdoc_mixnlimyLsBfxkLormF8wC907/exec';
+const GROQ_KEY = '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';
+const STORAGE = 'aai_crm_v3';
 
 const STAGES = [
-  { id:0, label:'Первое касание',      color:'#3b82f6', bg:'rgba(59,130,246,0.1)',  icon:'👋' },
-  { id:1, label:'Отправил демо',        color:'#a855f7', bg:'rgba(168,85,247,0.1)', icon:'🎬' },
-  { id:2, label:'Отправил КП — думает', color:'#f59e0b', bg:'rgba(245,158,11,0.1)', icon:'📄' },
-  { id:3, label:'Отказ',               color:'#ef4444', bg:'rgba(239,68,68,0.1)',   icon:'✖' },
-  { id:4, label:'Продажа',             color:'#10b981', bg:'rgba(16,185,129,0.1)',  icon:'✓' },
+  {id:'Sent first message', label:'Первое касание', color:'#1d4ed8', bg:'rgba(29,78,216,0.08)', icon:'👋'},
+  {id:'Sent demo',          label:'Отправил демо',  color:'#5b21b6', bg:'rgba(91,33,182,0.08)',  icon:'🎬'},
+  {id:'Thinking on KP',    label:'КП — думает',    color:'#92400e', bg:'rgba(146,64,14,0.08)',   icon:'📄'},
+  {id:'Booked a call',     label:'Созвон',         color:'#0369a1', bg:'rgba(3,105,161,0.08)',   icon:'📞'},
+  {id:'Closed',            label:'Продажа',        color:'#0a7c4e', bg:'rgba(10,124,78,0.08)',   icon:'✓'},
+  {id:'Not interested',    label:'Отказ',          color:'#991b1b', bg:'rgba(153,27,27,0.08)',   icon:'✕'},
 ];
 
-const GROQ_KEY = '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';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const SHEETS_ID = '167Mb2b4RROApdwJosh_lU9xSEo5QbCLcISnxTutyUi4';
-const SHEET_NEW_GID = '214734999';
-const SHEET_LEADS_GID = '1447471635';
-const STORAGE_KEY = 'aai_crm_v1';
+function localSave(l){try{localStorage.setItem(STORAGE,JSON.stringify(l))}catch{}}
+function localLoad(){try{const r=localStorage.getItem(STORAGE);return r?JSON.parse(r):null}catch{return null}}
 
-const DEMO = [
-  {id:'d1',name:'Магазин Alfaro',niche:'Одежда',contact:'@alfaro_uz',stage:0,amount:0,notes:'Заинтересован',source:'ai_agent',createdAt:new Date(Date.now()-7*86400000).toISOString()},
-  {id:'d2',name:'RestoCafe Tashkent',niche:'Ресторан',contact:'+998901234567',stage:1,amount:0,notes:'Посмотрел демо, понравилось',source:'ai_agent',createdAt:new Date(Date.now()-5*86400000).toISOString()},
-  {id:'d3',name:'AutoParts Samarkand',niche:'Автозапчасти',contact:'@autoparts_smk',stage:2,amount:1200000,notes:'Думает, говорит дорого',source:'manual',createdAt:new Date(Date.now()-3*86400000).toISOString()},
-  {id:'d4',name:'BeautyLab',niche:'Салон красоты',contact:'@beautylab_uz',stage:4,amount:1500000,notes:'Закрыли! Демо убедило сразу',source:'ai_agent',createdAt:new Date(Date.now()-2*86400000).toISOString()},
-  {id:'d5',name:'TechStore',niche:'Электроника',contact:'+998909876543',stage:3,amount:0,notes:'Сказал уже есть менеджер',source:'ai_agent',createdAt:new Date(Date.now()-1*86400000).toISOString()},
-];
-
-function loadLeads(){try{const r=localStorage.getItem(STORAGE_KEY);return r?JSON.parse(r):DEMO}catch{return DEMO}}
-function saveLeads(l){localStorage.setItem(STORAGE_KEY,JSON.stringify(l))}
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
-function fmt(d){if(!d)return'';return new Date(d).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'})}
-
-function parseCSV(text){
-  const lines=text.split('\n').filter(Boolean);
-  if(lines.length<2)return[];
-  const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
-  return lines.slice(1).map(line=>{
-    const vals=[];let cur='',inQ=false;
-    for(const ch of line+','){if(ch==='"')inQ=!inQ;else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}else cur+=ch;}
-    const obj={};headers.forEach((h,i)=>{obj[h]=(vals[i]||'').replace(/^"|"$/g,'').trim();});
-    return obj;
-  });
+// ── API CALLS ─────────────────────────────────────────
+async function apiGet(sheet){
+  const r=await fetch(`${API}?sheet=${sheet}`);
+  return r.json();
+}
+async function apiPost(body){
+  await fetch(API,{method:'POST',body:JSON.stringify(body)});
 }
 
-function mapRow(row){
-  const keys=Object.keys(row);
-  const find=(...p)=>keys.find(k=>p.some(x=>new RegExp(x,'i').test(k)));
-  return{
-    name:row[find('имя','name','компан','бизнес')]||Object.values(row)[0]||'—',
-    niche:row[find('ниш','categ','сфер')]||'',
-    contact:row[find('контакт','contact','инста','phone','тел')]||'',
-    notes:row[find('заметк','описан','note','desc','message','сообщ','текст')]||'',
-    stage:0,amount:0,source:'ai_agent',
-  };
-}
-
-// ── MODAL ──────────────────────────────────────────────
-function Modal({lead, defaultStage, onSave, onClose}){
-  const [f,setF]=useState({name:'',niche:'',contact:'',stage:defaultStage??0,amount:'',notes:'',source:'manual'});
-  useEffect(()=>{
-    if(lead)setF({name:lead.name||'',niche:lead.niche||'',contact:lead.contact||'',stage:lead.stage??0,amount:lead.amount||'',notes:lead.notes||'',source:lead.source||'manual'});
-  },[lead]);
-  const s=k=>v=>setF(f=>({...f,[k]:v}));
-  const inp={width:'100%',padding:'10px 14px',background:'var(--navy3)',border:'1px solid var(--border2)',borderRadius:8,color:'var(--text)',fontSize:14};
+// ── LOGO ──────────────────────────────────────────────
+function Logo({size=40}){
+  const s=size/40;
   return(
-    <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:'1rem'}}>
-      <div style={{background:'var(--navy2)',border:'1px solid var(--border2)',borderRadius:16,padding:'2rem',width:520,maxWidth:'100%',maxHeight:'90vh',overflowY:'auto',animation:'fadeIn 0.2s ease'}}>
+    <svg width={size} height={size*0.7} viewBox="0 0 40 28" fill="none">
+      <path d="M3 26L10 2L17 26" stroke="#0d1b3e" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M6 18H14" stroke="#0d1b3e" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M14 26L21 2L28 26" stroke="#0d1b3e" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M17 18H25" stroke="#0d1b3e" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M35 2V26" stroke="#0d1b3e" strokeWidth="3.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+// ── MODAL ─────────────────────────────────────────────
+function Modal({lead, onSave, onClose}){
+  const [f,setF]=useState({
+    name:lead?.name||'',
+    status:lead?.status||STAGES[0].id,
+    firstMsg:lead?.firstMsg||'',
+    lastMsg:lead?.lastMsg||'',
+    comment:lead?.comment||'',
+  });
+  const set=k=>v=>setF(p=>({...p,[k]:v}));
+  const inp={width:'100%',padding:'12px 16px',background:'var(--bg2)',border:'1.5px solid var(--border2)',borderRadius:10,color:'var(--text)',fontSize:16};
+  return(
+    <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{position:'fixed',inset:0,background:'rgba(13,27,62,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:'1rem'}}>
+      <div style={{background:'#fff',border:'2px solid var(--border)',borderRadius:20,padding:'2rem',width:540,maxWidth:'100%',maxHeight:'90vh',overflowY:'auto',animation:'fadeIn 0.2s ease'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem'}}>
-          <div style={{fontSize:18,fontWeight:700}}>{lead?'Редактировать':'Новый лид'}</div>
-          <button onClick={onClose} style={{background:'var(--navy4)',border:'1px solid var(--border)',borderRadius:8,padding:'6px 10px',color:'var(--text2)'}}>✕</button>
+          <div style={{fontSize:20,fontWeight:700,color:'var(--navy)'}}>{lead?'Редактировать лид':'Новый лид'}</div>
+          <button onClick={onClose} style={{width:36,height:36,background:'var(--bg2)',border:'1.5px solid var(--border)',borderRadius:10,color:'var(--text2)',fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
-          <div><label style={{display:'block',fontSize:12,color:'var(--text2)',marginBottom:4}}>Имя / компания *</label><input style={inp} value={f.name} onChange={e=>s('name')(e.target.value)} placeholder="Магазин..."/></div>
-          <div><label style={{display:'block',fontSize:12,color:'var(--text2)',marginBottom:4}}>Ниша</label><input style={inp} value={f.niche} onChange={e=>s('niche')(e.target.value)} placeholder="Ресторан..."/></div>
+
+        <div style={{marginBottom:14}}>
+          <label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text2)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.05em'}}>Компания *</label>
+          <input style={inp} value={f.name} onChange={e=>set('name')(e.target.value)} placeholder="Название компании..."/>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
-          <div><label style={{display:'block',fontSize:12,color:'var(--text2)',marginBottom:4}}>Контакт</label><input style={inp} value={f.contact} onChange={e=>s('contact')(e.target.value)} placeholder="@handle..."/></div>
-          <div><label style={{display:'block',fontSize:12,color:'var(--text2)',marginBottom:4}}>Сумма (сум)</label><input style={inp} type="number" value={f.amount} onChange={e=>s('amount')(e.target.value)} placeholder="1500000"/></div>
+
+        <div style={{marginBottom:14}}>
+          <label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text2)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.05em'}}>Статус</label>
+          <select style={inp} value={f.status} onChange={e=>set('status')(e.target.value)}>
+            {STAGES.map(s=><option key={s.id} value={s.id}>{s.icon} {s.label}</option>)}
+          </select>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
-          <div><label style={{display:'block',fontSize:12,color:'var(--text2)',marginBottom:4}}>Этап</label>
-            <select style={inp} value={f.stage} onChange={e=>s('stage')(+e.target.value)}>
-              {STAGES.map(st=><option key={st.id} value={st.id}>{st.icon} {st.label}</option>)}
-            </select>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
+          <div>
+            <label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text2)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.05em'}}>Первое сообщение</label>
+            <input style={inp} value={f.firstMsg} onChange={e=>set('firstMsg')(e.target.value)} placeholder="12.05.2026"/>
           </div>
-          <div><label style={{display:'block',fontSize:12,color:'var(--text2)',marginBottom:4}}>Источник</label>
-            <select style={inp} value={f.source} onChange={e=>s('source')(e.target.value)}>
-              <option value="ai_agent">AI-агент</option>
-              <option value="manual">Ручной</option>
-              <option value="referral">Реферал</option>
-            </select>
+          <div>
+            <label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text2)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.05em'}}>Последнее сообщение</label>
+            <input style={inp} value={f.lastMsg} onChange={e=>set('lastMsg')(e.target.value)} placeholder="14.05.2026"/>
           </div>
         </div>
+
         <div style={{marginBottom:'1.5rem'}}>
-          <label style={{display:'block',fontSize:12,color:'var(--text2)',marginBottom:4}}>Заметки</label>
-          <textarea style={{...inp,minHeight:90,resize:'vertical',lineHeight:1.5}} value={f.notes} onChange={e=>s('notes')(e.target.value)} placeholder="Что сказал, следующий шаг..."/>
+          <label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text2)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.05em'}}>Комментарий</label>
+          <textarea style={{...inp,minHeight:100,resize:'vertical',lineHeight:1.6}} value={f.comment} onChange={e=>set('comment')(e.target.value)} placeholder="Что сказал, следующий шаг..."/>
         </div>
-        <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
-          <button onClick={onClose} style={{padding:'11px 22px',background:'none',border:'1px solid var(--border2)',borderRadius:10,color:'var(--text2)',fontSize:14}}>Отмена</button>
-          <button onClick={()=>{if(!f.name.trim())return alert('Введи имя');onSave({...f,stage:+f.stage,amount:+f.amount||0});onClose();}} style={{padding:'11px 28px',background:'var(--accent)',border:'none',borderRadius:10,color:'#fff',fontSize:14,fontWeight:600}}>Сохранить</button>
+
+        <div style={{display:'flex',gap:12,justifyContent:'flex-end'}}>
+          <button onClick={onClose} style={{padding:'12px 24px',background:'var(--bg2)',border:'1.5px solid var(--border2)',borderRadius:12,color:'var(--text2)',fontSize:15,fontWeight:500}}>Отмена</button>
+          <button onClick={()=>{if(!f.name.trim())return alert('Введи название компании');onSave(f);onClose();}}
+            style={{padding:'12px 32px',background:'var(--navy)',border:'none',borderRadius:12,color:'#fff',fontSize:15,fontWeight:700}}
+            onMouseEnter={e=>e.currentTarget.style.background='var(--navy2)'}
+            onMouseLeave={e=>e.currentTarget.style.background='var(--navy)'}
+          >Сохранить</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── CARD ───────────────────────────────────────────────
-function Card({lead,onEdit,onDelete,onMove}){
+// ── CARD ──────────────────────────────────────────────
+function Card({lead, onEdit, onDelete, onMove}){
+  const stage=STAGES.find(s=>s.id===lead.status)||STAGES[0];
+  const si=STAGES.indexOf(stage);
   return(
     <div draggable onDragStart={e=>e.dataTransfer.setData('lid',lead.id)}
-      style={{background:'var(--navy3)',border:'1px solid var(--border)',borderRadius:10,padding:'14px 16px',cursor:'grab',animation:'fadeIn 0.2s ease'}}
+      style={{background:'#fff',border:'1.5px solid var(--border)',borderRadius:16,padding:'18px 20px',cursor:'grab',animation:'fadeIn 0.2s ease',marginBottom:0}}
       onMouseEnter={e=>e.currentTarget.style.borderColor='var(--border2)'}
       onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}
     >
-      <div style={{display:'flex',justifyContent:'space-between',gap:6,marginBottom:5}}>
-        <div style={{fontSize:14,fontWeight:600}}>{lead.name}</div>
-        {lead.notes&&<span title="Есть заметка" style={{color:'var(--amber)',fontSize:12}}>●</span>}
+      <div style={{fontSize:16,fontWeight:700,color:'var(--navy)',marginBottom:6,lineHeight:1.3}}>{lead.name}</div>
+
+      {lead.comment&&(
+        <div style={{fontSize:14,color:'var(--text2)',marginBottom:10,lineHeight:1.5,borderLeft:'3px solid var(--bg3)',paddingLeft:10}}>{lead.comment}</div>
+      )}
+
+      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
+        {lead.firstMsg&&<span style={{fontSize:12,padding:'3px 10px',background:'var(--bg2)',borderRadius:20,color:'var(--text2)',fontFamily:'DM Mono,monospace'}}>📅 {lead.firstMsg}</span>}
+        {lead.lastMsg&&<span style={{fontSize:12,padding:'3px 10px',background:'var(--bg2)',borderRadius:20,color:'var(--text2)',fontFamily:'DM Mono,monospace'}}>🕐 {lead.lastMsg}</span>}
       </div>
-      {lead.niche&&<div style={{fontSize:12,color:'var(--text3)',marginBottom:6}}>{lead.niche}</div>}
-      {lead.amount>0&&<div style={{fontSize:12,fontWeight:600,color:'var(--green)',background:'var(--green-dim)',padding:'2px 8px',borderRadius:6,display:'inline-block',marginBottom:6,fontFamily:'DM Mono,monospace'}}>{Number(lead.amount).toLocaleString('ru')} сум</div>}
-      {lead.contact&&<div style={{fontSize:11,color:'var(--text3)',marginBottom:8}}>{lead.contact}</div>}
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:4}}>
-        <span style={{fontSize:11,color:'var(--text3)'}}>{fmt(lead.createdAt)}</span>
-        <div style={{display:'flex',gap:4}}>
-          {lead.stage>0&&<Btn onClick={()=>onMove(lead.id,lead.stage-1)}>←</Btn>}
-          <Btn onClick={()=>onEdit(lead)} blue>✎</Btn>
-          {lead.stage<4&&<Btn onClick={()=>onMove(lead.id,lead.stage+1)} blue>→</Btn>}
-          <Btn onClick={()=>onDelete(lead.id)} danger>✕</Btn>
+
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+          {si>0&&<MoveBtn onClick={()=>onMove(lead.id,STAGES[si-1].id)} label="←"/>}
+          {si<STAGES.length-1&&<MoveBtn onClick={()=>onMove(lead.id,STAGES[si+1].id)} label="→" primary/>}
+        </div>
+        <div style={{display:'flex',gap:6}}>
+          <ActionBtn onClick={()=>onEdit(lead)} label="✎" blue/>
+          <ActionBtn onClick={()=>onDelete(lead.id)} label="✕" danger/>
         </div>
       </div>
     </div>
   );
 }
 
-function Btn({onClick,danger,blue,children}){
+function MoveBtn({onClick,label,primary}){
   return(
-    <button onClick={onClick} style={{width:28,height:28,display:'flex',alignItems:'center',justifyContent:'center',background:'var(--navy4)',border:'1px solid var(--border)',borderRadius:7,color:danger?'var(--red)':blue?'var(--accent2)':'var(--text2)',fontSize:13}}
-      onMouseEnter={e=>e.currentTarget.style.background='var(--navy5)'}
-      onMouseLeave={e=>e.currentTarget.style.background='var(--navy4)'}
-    >{children}</button>
+    <button onClick={onClick} style={{padding:'6px 14px',background:primary?'var(--navy)':'var(--bg2)',border:`1.5px solid ${primary?'var(--navy)':'var(--border2)'}`,borderRadius:8,color:primary?'#fff':'var(--text2)',fontSize:14,fontWeight:500}}
+      onMouseEnter={e=>e.currentTarget.style.opacity='0.8'}
+      onMouseLeave={e=>e.currentTarget.style.opacity='1'}
+    >{label}</button>
   );
 }
 
-// ── KANBAN ─────────────────────────────────────────────
-function Kanban({leads,onEdit,onDelete,onMove,onAdd}){
+function ActionBtn({onClick,label,danger,blue}){
+  return(
+    <button onClick={onClick} style={{width:34,height:34,display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg2)',border:'1.5px solid var(--border)',borderRadius:9,color:danger?'var(--red)':blue?'var(--blue)':'var(--text2)',fontSize:15}}
+      onMouseEnter={e=>e.currentTarget.style.background='var(--bg3)'}
+      onMouseLeave={e=>e.currentTarget.style.background='var(--bg2)'}
+    >{label}</button>
+  );
+}
+
+// ── KANBAN ────────────────────────────────────────────
+function Kanban({leads, onEdit, onDelete, onMove, onAdd}){
   const [over,setOver]=useState(null);
   return(
-    <div style={{overflowX:'auto',paddingBottom:'1.5rem'}}>
-      <div style={{display:'flex',gap:14,minWidth:'max-content',alignItems:'flex-start'}}>
+    <div style={{overflowX:'auto',paddingBottom:'2rem'}}>
+      <div style={{display:'flex',gap:16,minWidth:'max-content',alignItems:'flex-start'}}>
         {STAGES.map(st=>{
-          const sl=leads.filter(l=>l.stage===st.id);
+          const sl=leads.filter(l=>l.status===st.id);
           return(
-            <div key={st.id} style={{width:260,flexShrink:0}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 13px',borderRadius:10,marginBottom:10,background:st.bg,border:`1px solid ${st.color}25`}}>
-                <span style={{fontSize:13,fontWeight:600,color:st.color}}>{st.icon} {st.label}</span>
-                <span style={{fontSize:12,fontWeight:600,padding:'1px 8px',borderRadius:20,background:`${st.color}20`,color:st.color,fontFamily:'DM Mono,monospace'}}>{sl.length}</span>
+            <div key={st.id} style={{width:280,flexShrink:0}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',borderRadius:12,marginBottom:12,background:st.bg,border:`1.5px solid ${st.color}30`}}>
+                <span style={{fontSize:15,fontWeight:700,color:st.color}}>{st.icon} {st.label}</span>
+                <span style={{fontSize:13,fontWeight:700,padding:'3px 10px',borderRadius:20,background:`${st.color}15`,color:st.color,fontFamily:'DM Mono,monospace'}}>{sl.length}</span>
               </div>
-              <div onDragOver={e=>{e.preventDefault();setOver(st.id);}} onDrop={e=>{e.preventDefault();const id=e.dataTransfer.getData('lid');if(id)onMove(id,st.id);setOver(null);}} onDragLeave={()=>setOver(null)}
-                style={{minHeight:80,display:'flex',flexDirection:'column',gap:10,padding:4,borderRadius:10,border:over===st.id?`2px dashed ${st.color}60`:'2px dashed transparent',background:over===st.id?`${st.color}06`:'transparent',transition:'all 0.15s'}}>
+              <div
+                onDragOver={e=>{e.preventDefault();setOver(st.id);}}
+                onDrop={e=>{e.preventDefault();const id=e.dataTransfer.getData('lid');if(id)onMove(id,st.id);setOver(null);}}
+                onDragLeave={()=>setOver(null)}
+                style={{minHeight:100,display:'flex',flexDirection:'column',gap:12,padding:6,borderRadius:12,border:over===st.id?`2px dashed ${st.color}80`:'2px dashed transparent',background:over===st.id?st.bg:'transparent',transition:'all 0.15s'}}
+              >
                 {sl.map(l=><Card key={l.id} lead={l} onEdit={onEdit} onDelete={onDelete} onMove={onMove}/>)}
               </div>
-              <button onClick={()=>onAdd(st.id)} style={{width:'100%',marginTop:10,padding:'10px 0',border:'1px dashed var(--border2)',borderRadius:10,background:'none',color:'var(--text3)',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center',gap:5}}
-                onMouseEnter={e=>{e.currentTarget.style.color='var(--text2)';e.currentTarget.style.borderColor='var(--text3)';}}
-                onMouseLeave={e=>{e.currentTarget.style.color='var(--text3)';e.currentTarget.style.borderColor='var(--border2)';}}>
-                + Добавить лид
-              </button>
+              <button onClick={()=>onAdd(st.id)} style={{width:'100%',marginTop:12,padding:'12px 0',border:'2px dashed var(--border2)',borderRadius:12,background:'none',color:'var(--text3)',fontSize:14,fontWeight:500,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}
+                onMouseEnter={e=>{e.currentTarget.style.color='var(--text2)';e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.background='var(--bg2)';}}
+                onMouseLeave={e=>{e.currentTarget.style.color='var(--text3)';e.currentTarget.style.background='none';}}
+              >+ Добавить лид</button>
             </div>
           );
         })}
@@ -205,213 +223,243 @@ function Kanban({leads,onEdit,onDelete,onMove,onAdd}){
   );
 }
 
-// ── ANALYTICS ──────────────────────────────────────────
+// ── ANALYTICS ─────────────────────────────────────────
 function Analytics({leads}){
-  const [aiText,setAiText]=useState('');
+  const [ai,setAi]=useState('');
   const [loading,setLoading]=useState(false);
   const st=useMemo(()=>{
     const total=leads.length;
-    const byStage=STAGES.map(s=>({...s,count:leads.filter(l=>l.stage===s.id).length}));
-    const won=leads.filter(l=>l.stage===4).length;
-    const rejected=leads.filter(l=>l.stage===3).length;
-    const revenue=leads.filter(l=>l.stage===4).reduce((s,l)=>s+(+l.amount||0),0);
-    const avgDeal=won?Math.round(revenue/won):0;
-    const convRate=total?Math.round((won/total)*100):0;
-    return{total,byStage,won,rejected,revenue,avgDeal,convRate};
+    const byStage=STAGES.map(s=>({...s,count:leads.filter(l=>l.status===s.id).length}));
+    const won=leads.filter(l=>l.status==='Closed').length;
+    const lost=leads.filter(l=>l.status==='Not interested').length;
+    const conv=total?Math.round((won/total)*100):0;
+    return{total,byStage,won,lost,conv};
   },[leads]);
 
   async function analyze(){
-    if(leads.length<2){setAiText('Нужно хотя бы 2–3 лида.');return;}
-    setLoading(true);setAiText('');
+    if(leads.length<2){setAi('Нужно хотя бы 2–3 лида.');return;}
+    setLoading(true);setAi('');
     try{
-      const res=await fetch(GROQ_URL,{method:'POST',headers:{'Authorization':`Bearer ${GROQ_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({
-        model:'moonshotai/kimi-k2-instruct',max_tokens:800,
-        messages:[
-          {role:'system',content:'Ты аналитик продаж для Асада — продаёт AI Sales Manager бизнесам в Ташкенте. Анализируй строго по фактам. Структура: 🔴 УЗКОЕ ГОРЛЫШКО / 🟢 ЧТО РАБОТАЕТ / ⚡ СОВЕТ. По-русски, коротко, до 300 слов.'},
-          {role:'user',content:`Данные CRM: ${JSON.stringify({total:st.total,byStage:st.byStage.map(s=>({stage:s.label,count:s.count})),won:st.won,rejected:st.rejected,convRate:st.convRate+'%',revenue:st.revenue,avgDeal:st.avgDeal,leads:leads.slice(0,10).map(l=>({stage:STAGES[l.stage]?.label,niche:l.niche,notes:l.notes?.slice(0,100),amount:l.amount}))})}`}
-        ]
-      })});
-      const data=await res.json();
-      setAiText(data.choices?.[0]?.message?.content||'Ошибка');
-    }catch(e){setAiText('Ошибка: '+e.message);}
+      const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Authorization':`Bearer ${GROQ_KEY}`,'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'moonshotai/kimi-k2-instruct',max_tokens:800,
+          messages:[
+            {role:'system',content:'Ты аналитик продаж для Асада — продаёт AI Sales Manager бизнесам в Ташкенте. Анализируй строго по фактам. Структура: 🔴 УЗКОЕ ГОРЛЫШКО / 🟢 ЧТО РАБОТАЕТ / ⚡ КОНКРЕТНЫЙ СОВЕТ. По-русски, коротко, до 300 слов.'},
+            {role:'user',content:`Данные: ${JSON.stringify({total:st.total,byStage:st.byStage.map(s=>({stage:s.label,count:s.count})),won:st.won,lost:st.lost,conv:st.conv+'%',leads:leads.slice(0,10).map(l=>({status:l.status,comment:l.comment?.slice(0,80)}))})}`}
+          ]
+        })
+      });
+      const d=await res.json();
+      setAi(d.choices?.[0]?.message?.content||'Ошибка');
+    }catch(e){setAi('Ошибка: '+e.message);}
     setLoading(false);
   }
 
   const metrics=[
-    {l:'Всего лидов',v:st.total,c:'var(--accent2)'},
+    {l:'Всего лидов',v:st.total,c:'var(--navy)'},
     {l:'Продаж',v:st.won,c:'var(--green)'},
-    {l:'Отказов',v:st.rejected,c:'var(--red)'},
-    {l:'Конверсия',v:st.convRate+'%',c:'var(--purple)'},
-    {l:'Выручка',v:st.revenue?(st.revenue/1000000).toFixed(1)+'M':'—',c:'var(--green)'},
-    {l:'Средний чек',v:st.avgDeal?Math.round(st.avgDeal/1000)+'K':'—',c:'var(--amber)'},
+    {l:'Отказов',v:st.lost,c:'var(--red)'},
+    {l:'Конверсия',v:st.conv+'%',c:'var(--blue)'},
   ];
-  const barColors=['#3b82f6','#a855f7','#f59e0b','#ef4444','#10b981'];
+  const barColors=['#1d4ed8','#5b21b6','#92400e','#0369a1','#0a7c4e','#991b1b'];
 
   return(
-    <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeIn 0.2s ease'}}>
-      <div style={{fontSize:22,fontWeight:700}}>Аналитика</div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:12}}>
+    <div style={{display:'flex',flexDirection:'column',gap:20,animation:'fadeIn 0.2s ease'}}>
+      <div style={{fontSize:24,fontWeight:700,color:'var(--navy)'}}>Аналитика</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:14}}>
         {metrics.map(m=>(
-          <div key={m.l} style={{background:'var(--navy2)',border:'1px solid var(--border)',borderRadius:12,padding:'16px 18px'}}>
-            <div style={{fontSize:11,color:'var(--text2)',marginBottom:8}}>{m.l}</div>
-            <div style={{fontSize:26,fontWeight:700,color:m.c,fontFamily:'DM Mono,monospace'}}>{m.v}</div>
+          <div key={m.l} style={{background:'#fff',border:'1.5px solid var(--border)',borderRadius:16,padding:'20px 22px'}}>
+            <div style={{fontSize:13,color:'var(--text2)',marginBottom:8,fontWeight:500}}>{m.l}</div>
+            <div style={{fontSize:32,fontWeight:700,color:m.c,fontFamily:'DM Mono,monospace'}}>{m.v}</div>
           </div>
         ))}
       </div>
-      <div style={{background:'var(--navy2)',border:'1px solid var(--border)',borderRadius:14,padding:'1.5rem'}}>
-        <div style={{fontSize:14,fontWeight:600,marginBottom:16}}>📊 Воронка</div>
+      <div style={{background:'#fff',border:'1.5px solid var(--border)',borderRadius:16,padding:'1.5rem'}}>
+        <div style={{fontSize:16,fontWeight:700,marginBottom:18,color:'var(--navy)'}}>Воронка</div>
         {st.byStage.map((s,i)=>{
           const w=st.total>0?Math.round((s.count/st.total)*100):0;
           return(
-            <div key={s.id} style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
-              <div style={{width:180,flexShrink:0,fontSize:13,color:'var(--text2)'}}>{s.icon} {s.label}</div>
-              <div style={{flex:1,height:20,background:'var(--navy3)',borderRadius:6,overflow:'hidden'}}>
-                <div style={{height:'100%',width:w+'%',background:barColors[i],borderRadius:6,minWidth:s.count>0?6:0}}/>
+            <div key={s.id} style={{display:'flex',alignItems:'center',gap:14,marginBottom:14}}>
+              <div style={{width:160,flexShrink:0,fontSize:14,color:'var(--text2)',fontWeight:500}}>{s.icon} {s.label}</div>
+              <div style={{flex:1,height:24,background:'var(--bg2)',borderRadius:8,overflow:'hidden'}}>
+                <div style={{height:'100%',width:w+'%',background:barColors[i],borderRadius:8,minWidth:s.count>0?8:0,transition:'width 0.6s ease'}}/>
               </div>
-              <div style={{fontSize:12,color:'var(--text2)',fontFamily:'DM Mono,monospace',width:25,textAlign:'right'}}>{s.count}</div>
-              <div style={{fontSize:11,color:'var(--text3)',width:30,textAlign:'right'}}>{w}%</div>
+              <div style={{fontSize:14,color:'var(--text2)',fontFamily:'DM Mono,monospace',width:28,textAlign:'right',fontWeight:600}}>{s.count}</div>
+              <div style={{fontSize:13,color:'var(--text3)',width:34,textAlign:'right'}}>{w}%</div>
             </div>
           );
         })}
       </div>
-      <div style={{background:'var(--navy2)',border:'1px solid var(--border)',borderRadius:14,padding:'1.5rem'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:aiText||loading?16:0}}>
-          <div style={{fontSize:14,fontWeight:600}}>✨ AI-анализ</div>
-          <button onClick={analyze} disabled={loading} style={{padding:'10px 20px',background:loading?'var(--navy4)':'var(--accent)',border:'none',borderRadius:10,color:'#fff',fontSize:14,fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
-            {loading?<><div style={{width:14,height:14,border:'2px solid rgba(255,255,255,0.3)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>Анализирую...</>:'✨ Анализировать'}
+      <div style={{background:'#fff',border:'1.5px solid var(--border)',borderRadius:16,padding:'1.5rem'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:ai||loading?18:0}}>
+          <div style={{fontSize:16,fontWeight:700,color:'var(--navy)'}}>✨ AI-анализ</div>
+          <button onClick={analyze} disabled={loading} style={{padding:'11px 24px',background:loading?'var(--bg3)':'var(--navy)',border:'none',borderRadius:12,color:loading?'var(--text2)':'#fff',fontSize:15,fontWeight:700,display:'flex',alignItems:'center',gap:8}}>
+            {loading?<><div style={{width:16,height:16,border:'2px solid var(--border2)',borderTopColor:'var(--navy)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>Анализирую...</>:'✨ Анализировать'}
           </button>
         </div>
-        {!aiText&&!loading&&<div style={{fontSize:13,color:'var(--text3)',lineHeight:1.7}}>Нажми — AI найдёт где ты теряешь лидов и что помогает продавать.</div>}
-        {aiText&&<div style={{fontSize:14,color:'var(--text)',lineHeight:1.8,whiteSpace:'pre-wrap'}}>{aiText}</div>}
+        {!ai&&!loading&&<div style={{fontSize:15,color:'var(--text3)',lineHeight:1.7}}>Нажми — AI найдёт где ты теряешь лидов и что реально помогает продавать.</div>}
+        {ai&&<div style={{fontSize:15,color:'var(--text)',lineHeight:1.85,whiteSpace:'pre-wrap'}}>{ai}</div>}
       </div>
     </div>
   );
 }
 
-// ── SETTINGS ───────────────────────────────────────────
-function Settings({leads,onImport,onClear}){
-  const [msg,setMsg]=useState('');
-  const [ok,setOk]=useState(null);
-  const [busy,setBusy]=useState(false);
-
-  async function sync(gid,label){
-    setBusy(true);setMsg('Загружаю...');setOk(null);
-    try{
-      const res=await fetch(`https://docs.google.com/spreadsheets/d/${SHEETS_ID}/export?format=csv&gid=${gid}`);
-      if(!res.ok)throw new Error('HTTP '+res.status);
-      const text=await res.text();
-      const rows=parseCSV(text).filter(r=>Object.values(r).some(v=>v));
-      if(!rows.length)throw new Error('Пустая таблица');
-      onImport(rows.map(mapRow));
-      setOk(true);setMsg(`✓ Импортировано ${rows.length} лидов из "${label}"`);
-    }catch(e){setOk(false);setMsg('Ошибка: открой таблицу на просмотр всем у кого есть ссылка');}
-    setBusy(false);
-  }
-
-  function exportCSV(){
-    const h=['Имя','Ниша','Контакт','Этап','Сумма','Заметки','Дата'];
-    const sl=['Первое касание','Отправил демо','Отправил КП — думает','Отказ','Продажа'];
-    const rows=leads.map(l=>[l.name,l.niche,l.contact,sl[l.stage]||'',l.amount,l.notes?.replace(/\n/g,' '),new Date(l.createdAt).toLocaleDateString('ru-RU')]);
-    const csv=[h,...rows].map(r=>r.map(v=>`"${v||''}"`).join(',')).join('\n');
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='aai-crm.csv';a.click();
-  }
-
-  const Btn=({onClick,children,danger,disabled})=>(
-    <button onClick={onClick} disabled={disabled} style={{display:'flex',alignItems:'center',gap:10,padding:'12px 18px',background:danger?'var(--red-dim)':'var(--navy3)',border:`1px solid ${danger?'rgba(239,68,68,0.3)':'var(--border2)'}`,borderRadius:10,color:danger?'var(--red)':'var(--text)',fontSize:14,width:'100%',marginBottom:10,opacity:disabled?0.5:1}}
-      onMouseEnter={e=>e.currentTarget.style.background=danger?'rgba(239,68,68,0.15)':'var(--navy4)'}
-      onMouseLeave={e=>e.currentTarget.style.background=danger?'var(--red-dim)':'var(--navy3)'}
-    >{children}</button>
-  );
-
-  return(
-    <div style={{maxWidth:560,animation:'fadeIn 0.2s ease'}}>
-      <div style={{fontSize:22,fontWeight:700,marginBottom:'1.5rem'}}>Настройки</div>
-      <div style={{background:'var(--navy2)',border:'1px solid var(--border)',borderRadius:14,padding:'1.5rem',marginBottom:14}}>
-        <div style={{fontSize:14,fontWeight:600,marginBottom:'1rem',paddingBottom:'0.75rem',borderBottom:'1px solid var(--border)'}}>Google Sheets — импорт</div>
-        <div style={{fontSize:13,color:'var(--text2)',marginBottom:14,lineHeight:1.6}}>Таблица должна быть открыта: <b style={{color:'var(--text)'}}>Файл → Доступ → Все у кого есть ссылка → Просмотр</b></div>
-        <Btn onClick={()=>sync(SHEET_NEW_GID,'AI-агент лиды')} disabled={busy}>🔄 Импорт новых лидов (AI-агент)</Btn>
-        <Btn onClick={()=>sync(SHEET_LEADS_GID,'Лиды в работе')} disabled={busy}>🔄 Импорт лидов в работе</Btn>
-        {msg&&<div style={{padding:'10px 14px',borderRadius:8,background:ok?'var(--green-dim)':'var(--red-dim)',fontSize:13,color:ok?'var(--green)':'var(--red)'}}>{msg}</div>}
-      </div>
-      <div style={{background:'var(--navy2)',border:'1px solid var(--border)',borderRadius:14,padding:'1.5rem'}}>
-        <div style={{fontSize:14,fontWeight:600,marginBottom:'1rem',paddingBottom:'0.75rem',borderBottom:'1px solid var(--border)'}}>Данные ({leads.length} лидов)</div>
-        <Btn onClick={exportCSV}>⬇ Экспорт в CSV</Btn>
-        <Btn onClick={()=>{if(confirm('Удалить все лиды?'))onClear();}} danger>✕ Очистить все лиды</Btn>
-      </div>
-    </div>
-  );
-}
-
-// ── APP ────────────────────────────────────────────────
+// ── APP ───────────────────────────────────────────────
 function App(){
-  const [leads,setLeads]=useState(()=>loadLeads());
+  const [leads,setLeads]=useState(()=>localLoad()||[]);
   const [page,setPage]=useState('kanban');
   const [modal,setModal]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const [syncMsg,setSyncMsg]=useState('');
 
-  const upd=fn=>{setLeads(prev=>{const n=fn(prev);saveLeads(n);return n;});};
-  const addLead=d=>upd(p=>[{...d,id:uid(),createdAt:new Date().toISOString()},...p]);
-  const editLead=(id,d)=>upd(p=>p.map(l=>l.id===id?{...l,...d,updatedAt:new Date().toISOString()}:l));
-  const delLead=id=>{if(confirm('Удалить?'))upd(p=>p.filter(l=>l.id!==id));};
-  const moveLead=(id,stage)=>upd(p=>p.map(l=>l.id===id?{...l,stage,updatedAt:new Date().toISOString()}:l));
-  const importLeads=nl=>upd(p=>{const ex=new Set(p.map(l=>l.contact||l.name));return[...nl.filter(l=>!ex.has(l.contact||l.name)).map(l=>({...l,id:uid(),createdAt:new Date().toISOString()})),...p];});
-  const clearLeads=()=>{localStorage.removeItem(STORAGE_KEY);setLeads(DEMO);};
+  const upd=fn=>setLeads(p=>{const n=fn(p);localSave(n);return n;});
+  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 
-  const NAV=[{id:'kanban',icon:'⊞',label:'Канбан'},{id:'analytics',icon:'📊',label:'Аналитика'},{id:'settings',icon:'⚙',label:'Настройки'}];
-  const total=leads.length, active=leads.filter(l=>l.stage!==3&&l.stage!==4).length, won=leads.filter(l=>l.stage===4).length;
+  // Load from Sheets on start
+  useEffect(()=>{
+    const cached=localLoad();
+    if(cached&&cached.length>0)return;
+    loadFromSheets();
+  },[]);
+
+  async function loadFromSheets(){
+    setLoading(true);setSyncMsg('Загружаю из Google Sheets...');
+    try{
+      const rows=await apiGet('leads');
+      if(!rows||rows.length<2){setSyncMsg('Таблица пуста');setLoading(false);return;}
+      const headers=rows[0];
+      const mapped=rows.slice(1).filter(r=>r[0]).map(r=>({
+        id:uid(),
+        name:r[0]||'',
+        firstMsg:r[1]||'',
+        status:r[2]||STAGES[0].id,
+        lastMsg:r[3]||'',
+        comment:r[4]||'',
+      }));
+      upd(()=>mapped);
+      setSyncMsg(`✓ Загружено ${mapped.length} лидов`);
+    }catch(e){setSyncMsg('Ошибка загрузки: '+e.message);}
+    setLoading(false);
+    setTimeout(()=>setSyncMsg(''),3000);
+  }
+
+  async function saveLead(data, existingId){
+    const row=[data.name, data.firstMsg, data.status, data.lastMsg, data.comment];
+    if(existingId){
+      upd(p=>p.map(l=>l.id===existingId?{...l,...data}:l));
+      await apiPost({action:'update',name:leads.find(l=>l.id===existingId)?.name,row});
+    }else{
+      const newLead={...data,id:uid()};
+      upd(p=>[newLead,...p]);
+      await apiPost({action:'add',row});
+    }
+  }
+
+  async function deleteLead(id){
+    if(!confirm('Удалить лид?'))return;
+    const lead=leads.find(l=>l.id===id);
+    upd(p=>p.filter(l=>l.id!==id));
+    if(lead)await apiPost({action:'delete',name:lead.name});
+  }
+
+  async function moveLead(id,status){
+    const lead=leads.find(l=>l.id===id);
+    if(!lead)return;
+    const updated={...lead,status};
+    upd(p=>p.map(l=>l.id===id?updated:l));
+    await apiPost({action:'update',name:lead.name,row:[lead.name,lead.firstMsg,status,lead.lastMsg,lead.comment]});
+  }
+
+  const NAV=[{id:'kanban',icon:'⊞',label:'Канбан'},{id:'analytics',icon:'📊',label:'Аналитика'}];
+  const total=leads.length,active=leads.filter(l=>l.status!=='Closed'&&l.status!=='Not interested').length,won=leads.filter(l=>l.status==='Closed').length;
 
   return(
-    <div style={{display:'flex',minHeight:'100vh'}}>
+    <div style={{display:'flex',minHeight:'100vh',background:'var(--bg)'}}>
       {/* Sidebar */}
-      <aside style={{width:220,flexShrink:0,background:'var(--navy2)',borderRight:'1px solid var(--border)',display:'flex',flexDirection:'column',height:'100vh',position:'sticky',top:0}}>
-        <div style={{padding:'24px 20px 18px',borderBottom:'1px solid var(--border)'}}>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <svg width="34" height="26" viewBox="0 0 34 26"><path d="M3 24L10 3L17 24" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 17H14" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round"/><path d="M13 24L20 3L27 24" stroke="#eef0f8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 17H24" stroke="#eef0f8" strokeWidth="2.5" strokeLinecap="round"/><path d="M31 3V24" stroke="#eef0f8" strokeWidth="3" strokeLinecap="round"/></svg>
-            <div><div style={{fontSize:13,fontWeight:700,letterSpacing:'0.08em'}}>AAI AGENCY</div><div style={{fontSize:10,color:'var(--text3)',letterSpacing:'0.06em'}}>SALES CRM</div></div>
+      <aside style={{width:240,flexShrink:0,background:'#fff',borderRight:'1.5px solid var(--border)',display:'flex',flexDirection:'column',height:'100vh',position:'sticky',top:0}}>
+        <div style={{padding:'28px 24px 22px',borderBottom:'1.5px solid var(--border)',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
+          <Logo size={48}/>
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:15,fontWeight:800,letterSpacing:'0.12em',color:'var(--navy)'}}>AAI AGENCY</div>
+            <div style={{fontSize:11,color:'var(--text3)',letterSpacing:'0.08em',marginTop:2}}>AI AUTOMATION AGENCY</div>
           </div>
         </div>
-        <div style={{padding:'14px 14px 6px'}}>
-          <button onClick={()=>setModal({lead:null,stage:0})} style={{width:'100%',padding:'11px 16px',background:'var(--accent)',border:'none',borderRadius:10,color:'#fff',fontSize:14,fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
-            onMouseEnter={e=>e.currentTarget.style.background='var(--accent2)'}
-            onMouseLeave={e=>e.currentTarget.style.background='var(--accent)'}
+
+        <div style={{padding:'16px 16px 8px'}}>
+          <button onClick={()=>setModal({lead:null,status:STAGES[0].id})}
+            style={{width:'100%',padding:'13px 16px',background:'var(--navy)',border:'none',borderRadius:12,color:'#fff',fontSize:15,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
+            onMouseEnter={e=>e.currentTarget.style.background='var(--navy2)'}
+            onMouseLeave={e=>e.currentTarget.style.background='var(--navy)'}
           >+ Новый лид</button>
         </div>
-        <nav style={{padding:'6px 10px',flex:1}}>
+
+        <nav style={{padding:'6px 12px',flex:1}}>
           {NAV.map(n=>{
-            const active=page===n.id;
+            const act=page===n.id;
             return(
-              <button key={n.id} onClick={()=>setPage(n.id)} style={{width:'100%',padding:'11px 14px',marginBottom:3,background:active?'var(--navy4)':'none',border:active?'1px solid var(--border2)':'1px solid transparent',borderRadius:10,color:active?'var(--text)':'var(--text2)',fontSize:14,fontWeight:active?500:400,display:'flex',alignItems:'center',gap:10,textAlign:'left'}}
-                onMouseEnter={e=>{if(!active)e.currentTarget.style.background='var(--navy3)';}}
-                onMouseLeave={e=>{if(!active)e.currentTarget.style.background='none';}}
-              ><span style={{fontSize:16}}>{n.icon}</span>{n.label}</button>
+              <button key={n.id} onClick={()=>setPage(n.id)} style={{width:'100%',padding:'12px 16px',marginBottom:4,background:act?'var(--bg2)':'none',border:act?'1.5px solid var(--border2)':'1.5px solid transparent',borderRadius:12,color:act?'var(--navy)':'var(--text2)',fontSize:15,fontWeight:act?700:400,display:'flex',alignItems:'center',gap:10,textAlign:'left'}}
+                onMouseEnter={e=>{if(!act)e.currentTarget.style.background='var(--bg2)';}}
+                onMouseLeave={e=>{if(!act)e.currentTarget.style.background='none';}}
+              ><span style={{fontSize:18}}>{n.icon}</span>{n.label}</button>
             );
           })}
         </nav>
-        <div style={{padding:'12px 14px',borderTop:'1px solid var(--border)',fontSize:11,color:'var(--text3)',lineHeight:1.6}}>
+
+        <div style={{padding:'14px 16px',borderTop:'1.5px solid var(--border)'}}>
+          <button onClick={loadFromSheets} disabled={loading} style={{width:'100%',padding:'11px 14px',background:'var(--bg2)',border:'1.5px solid var(--border2)',borderRadius:12,color:'var(--text2)',fontSize:14,fontWeight:500,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
+            onMouseEnter={e=>e.currentTarget.style.background='var(--bg3)'}
+            onMouseLeave={e=>e.currentTarget.style.background='var(--bg2)'}
+          >
+            <span style={{display:'inline-block',animation:loading?'spin 1s linear infinite':'none',fontSize:16}}>🔄</span>
+            {loading?'Загружаю...':'Обновить из Sheets'}
+          </button>
+          {syncMsg&&<div style={{fontSize:12,color:syncMsg.startsWith('✓')?'var(--green)':'var(--text3)',marginTop:8,textAlign:'center'}}>{syncMsg}</div>}
+        </div>
+
+        <div style={{padding:'10px 16px 16px',borderTop:'1.5px solid var(--border)',fontSize:12,color:'var(--text3)',lineHeight:1.8}}>
           <div>{total} лидов · {active} активных</div>
-          <div style={{color:'var(--green)'}}>{won} продаж</div>
+          <div style={{color:'var(--green)',fontWeight:600}}>{won} продаж</div>
         </div>
       </aside>
 
       {/* Main */}
       <main style={{flex:1,display:'flex',flexDirection:'column',minWidth:0}}>
-        <div style={{padding:'20px 28px 16px',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,background:'var(--navy)',zIndex:5}}>
+        <div style={{padding:'22px 32px 18px',borderBottom:'1.5px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,background:'#fff',zIndex:5}}>
           <div>
-            <div style={{fontSize:20,fontWeight:700}}>{NAV.find(n=>n.id===page)?.label}</div>
-            {page==='kanban'&&<div style={{fontSize:12,color:'var(--text3)',marginTop:2}}>{total} лидов · {active} активных · {won} продаж</div>}
+            <div style={{fontSize:22,fontWeight:800,color:'var(--navy)'}}>{NAV.find(n=>n.id===page)?.label}</div>
+            {page==='kanban'&&<div style={{fontSize:13,color:'var(--text3)',marginTop:2}}>{total} лидов · {active} активных · {won} продаж</div>}
           </div>
-          {page==='kanban'&&<button onClick={()=>setModal({lead:null,stage:0})} style={{padding:'10px 20px',background:'var(--accent)',border:'none',borderRadius:10,color:'#fff',fontSize:14,fontWeight:600}}
-            onMouseEnter={e=>e.currentTarget.style.background='var(--accent2)'}
-            onMouseLeave={e=>e.currentTarget.style.background='var(--accent)'}
-          >+ Новый лид</button>}
+          {page==='kanban'&&(
+            <button onClick={()=>setModal({lead:null,status:STAGES[0].id})}
+              style={{padding:'12px 24px',background:'var(--navy)',border:'none',borderRadius:12,color:'#fff',fontSize:15,fontWeight:700}}
+              onMouseEnter={e=>e.currentTarget.style.background='var(--navy2)'}
+              onMouseLeave={e=>e.currentTarget.style.background='var(--navy)'}
+            >+ Новый лид</button>
+          )}
         </div>
-        <div style={{flex:1,padding:'24px 28px',overflowY:'auto'}}>
-          {page==='kanban'&&<Kanban leads={leads} onEdit={l=>setModal({lead:l,stage:l.stage})} onDelete={delLead} onMove={moveLead} onAdd={s=>setModal({lead:null,stage:s})}/>}
+
+        <div style={{flex:1,padding:'28px 32px',overflowY:'auto',background:'var(--bg2)'}}>
+          {page==='kanban'&&(
+            <Kanban leads={leads}
+              onEdit={l=>setModal({lead:l,status:l.status})}
+              onDelete={deleteLead}
+              onMove={moveLead}
+              onAdd={s=>setModal({lead:null,status:s})}
+            />
+          )}
           {page==='analytics'&&<Analytics leads={leads}/>}
-          {page==='settings'&&<Settings leads={leads} onImport={importLeads} onClear={clearLeads}/>}
         </div>
       </main>
 
-      {modal&&<Modal lead={modal.lead} defaultStage={modal.stage} onSave={d=>{if(modal.lead)editLead(modal.lead.id,d);else addLead(d);}} onClose={()=>setModal(null)}/>}
+      {modal&&(
+        <Modal
+          lead={modal.lead}
+          onSave={d=>saveLead(d,modal.lead?.id)}
+          onClose={()=>setModal(null)}
+        />
+      )}
     </div>
   );
 }
