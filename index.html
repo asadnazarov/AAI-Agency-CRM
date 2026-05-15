@@ -204,7 +204,7 @@ function RopPanel({leads,onClose}){
         method:'POST',
         headers:{'Authorization':`Bearer ${GROQ}`,'Content-Type':'application/json'},
         body:JSON.stringify({
-          model:'moonshotai/kimi-k2-instruct',max_tokens:1200,temperature:0.4,
+          model:'openai/gpt-oss-120b',max_tokens:1200,temperature:0.4,
           messages:[
             {role:'system',content:ROP_SYSTEM},
             {role:'user',content:`Сейчас: ${td.date}, ${td.day}, ${td.hour}:00 по Ташкенту.\n\nКанбан Асада (${leads.length} лидов):\n${JSON.stringify(leadsData,null,2)}`}
@@ -429,7 +429,7 @@ function ColdPage({onSendToKanban}){
 function AnalyticsPage({leads}){
   const [ai,setAi]=useState('');const [loading,setLoading]=useState(false);
   const st=useMemo(()=>{const total=leads.length;const byStage=STAGES.map(s=>({...s,count:leads.filter(l=>l.status===s.id).length}));const won=leads.filter(l=>l.status==='Closed').length;const lost=leads.filter(l=>l.status==='Not interested').length;const conv=total?Math.round((won/total)*100):0;return{total,byStage,won,lost,conv};},[leads]);
-  async function analyze(){if(leads.length<2){setAi('Нужно хотя бы 2-3 лида.');return;}setLoading(true);setAi('');try{const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${GROQ}`,'Content-Type':'application/json'},body:JSON.stringify({model:'moonshotai/kimi-k2-instruct',max_tokens:800,messages:[{role:'system',content:'Ты аналитик продаж. Структура: УЗКОЕ ГОРЛЫШКО / ЧТО РАБОТАЕТ / КОНКРЕТНЫЙ СОВЕТ. По-русски, коротко.'},{role:'user',content:JSON.stringify({total:st.total,byStage:st.byStage.map(s=>({s:s.label,c:s.count})),won:st.won,lost:st.lost,conv:st.conv+'%'})}]})});const d=await res.json();setAi(d.choices?.[0]?.message?.content||'Ошибка');}catch(e){setAi('Ошибка: '+e.message);}setLoading(false);}
+  async function analyze(){if(leads.length<2){setAi('Нужно хотя бы 2-3 лида.');return;}setLoading(true);setAi('');try{const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${GROQ}`,'Content-Type':'application/json'},body:JSON.stringify({model:'openai/gpt-oss-120b',max_tokens:800,messages:[{role:'system',content:'Ты аналитик продаж. Структура: УЗКОЕ ГОРЛЫШКО / ЧТО РАБОТАЕТ / КОНКРЕТНЫЙ СОВЕТ. По-русски, коротко.'},{role:'user',content:JSON.stringify({total:st.total,byStage:st.byStage.map(s=>({s:s.label,c:s.count})),won:st.won,lost:st.lost,conv:st.conv+'%'})}]})});const d=await res.json();setAi(d.choices?.[0]?.message?.content||'Ошибка');}catch(e){setAi('Ошибка: '+e.message);}setLoading(false);}
   const bc=['#2563eb','#7c3aed','#d97706','#0891b2','#059669','#dc2626'];
   return(
     <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeUp 0.25s ease'}}>
