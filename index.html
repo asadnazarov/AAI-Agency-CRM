@@ -61,7 +61,6 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--navy)!im
 <script type="text/babel">
 const {useState,useEffect,useMemo,useRef} = React;
 
-// ✅ НОВЫЙ URL СКРИПТА
 const API = 'https://script.google.com/macros/s/AKfycbzlEiUktgoZmO4DCrSXh1x6kMKI0Ub29gCD2IuWoOYLfnLRTAJ3MjWBqvjK8jP_Ggzx/exec';
 
 const SK='aai_k_v11';const SC='aai_c_v11';const SG='aai_goal_v3';
@@ -108,8 +107,6 @@ function groupByDay(comments){
   comments.forEach(c=>{const d=c.time?c.time.split(' ')[0]:'—';if(!g[d])g[d]=[];g[d].push(c);});
   return g;
 }
-
-// ✅ ИСПРАВЛЕНО: encodeURIComponent для пробелов в названии листа
 async function apiGet(sheet){
   return(await fetch(`${API}?sheet=${encodeURIComponent(sheet)}`)).json();
 }
@@ -310,7 +307,7 @@ function KanbanBoard({leads,onCardClick,onMove,onAdd}){
 }
 
 function PipelineModal({lead,onSend,onClose}){
-  const [status,setStatus]=useState(STAGES[0].id);
+  const [status,setStatus]=useState('Sent first message');
   const [comment,setComment]=useState('');
   return(
     <div className="modal-wrap" onClick={e=>e.target===e.currentTarget&&onClose()}>
@@ -328,11 +325,26 @@ function PipelineModal({lead,onSend,onClose}){
           ))}
         </div>
         {(lead.website||lead.profileUrl)&&<div style={{display:'flex',gap:8,marginBottom:14}}>{lead.website&&<a href={lead.website} target="_blank" rel="noreferrer" style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'var(--blue)',textDecoration:'none',padding:'5px 10px',background:'#eff6ff',borderRadius:7,fontWeight:600}}><I.link/>Сайт</a>}{lead.profileUrl&&<a href={lead.profileUrl} target="_blank" rel="noreferrer" style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#7c3aed',textDecoration:'none',padding:'5px 10px',background:'#f5f3ff',borderRadius:7,fontWeight:600}}><I.link/>Instagram</a>}</div>}
-        {lead.firstMessage&&<div style={{background:'var(--bg)',borderLeft:'2.5px solid var(--navy)',borderRadius:8,padding:'10px 13px',marginBottom:14}}><div style={{fontSize:10,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>Сообщение агента</div><p style={{fontSize:12,color:'var(--text2)',lineHeight:1.65}}>{lead.firstMessage}</p></div>}
+        {lead.firstMessage&&(
+          <div style={{background:'var(--bg)',borderLeft:'2.5px solid var(--navy)',borderRadius:8,padding:'10px 13px',marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>Сообщение агента</div>
+            <p style={{fontSize:12,color:'var(--text2)',lineHeight:1.65}}>{lead.firstMessage}</p>
+          </div>
+        )}
         <div style={{borderTop:'1.5px solid var(--border)',paddingTop:14}}>
-          <div style={{marginBottom:10}}><label style={{display:'block',fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:5}}>Статус</label><select className="inp" value={status} onChange={e=>setStatus(e.target.value)}>{STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
-          <div style={{marginBottom:14}}><label style={{display:'block',fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:5}}>Комментарий</label><textarea className="inp" value={comment} onChange={e=>setComment(e.target.value)} placeholder="Заметки..." style={{minHeight:70,resize:'vertical',lineHeight:1.6}}/></div>
-          <button className="btn btn-navy" style={{width:'100%',justifyContent:'center'}} onClick={()=>onSend(lead,status,comment)}>Добавить в канбан <I.arR/></button>
+          <div style={{marginBottom:10}}>
+            <label style={{display:'block',fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:5}}>Статус в канбане</label>
+            <select className="inp" value={status} onChange={e=>setStatus(e.target.value)}>
+              {STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </div>
+          <div style={{marginBottom:14}}>
+            <label style={{display:'block',fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:5}}>Комментарий (необязательно)</label>
+            <textarea className="inp" value={comment} onChange={e=>setComment(e.target.value)} placeholder="Заметки о лиде..." style={{minHeight:70,resize:'vertical',lineHeight:1.6}}/>
+          </div>
+          <button className="btn btn-navy" style={{width:'100%',justifyContent:'center',fontSize:14,padding:'12px'}} onClick={()=>onSend(lead,status,comment)}>
+            В канбан <I.arR/>
+          </button>
         </div>
       </div>
     </div>
@@ -357,7 +369,9 @@ function PipelineCard({lead,onClick}){
           {lead.language&&<span style={{fontSize:11,padding:'2px 9px',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:5,color:'var(--text2)',fontFamily:'JetBrains Mono,monospace'}}>{lead.language.toUpperCase()}</span>}
           {lead.hasAutoReply==='Yes'&&<span style={{fontSize:11,padding:'2px 9px',background:'#ecfdf5',border:'1.5px solid #6ee7b7',borderRadius:5,color:'var(--green)',fontWeight:600}}>авто-ответ</span>}
         </div>
-        <button className="btn btn-navy" style={{width:'100%',justifyContent:'center',fontSize:12,padding:'9px'}} onClick={e=>{e.stopPropagation();onClick();}}>В канбан <I.arR/></button>
+        <button className="btn btn-navy" style={{width:'100%',justifyContent:'center',fontSize:12,padding:'9px'}} onClick={e=>{e.stopPropagation();onClick();}}>
+          В канбан <I.arR/>
+        </button>
       </div>
     </div>
   );
@@ -366,42 +380,25 @@ function PipelineCard({lead,onClick}){
 function PipelinePage({onSendToKanban}){
   const [leads,setLeads]=useState(()=>ls(SC)||[]);
   const [loading,setLoading]=useState(false);
-  const [syncLoading,setSyncLoading]=useState(false);
   const [msg,setMsg]=useState('');
   const [selected,setSelected]=useState(null);
   const [search,setSearch]=useState('');
   const [tier,setTier]=useState('ALL');
 
-  // ✅ ИСПРАВЛЕНО: encodeURIComponent уже в apiGet, но здесь явно передаём правильное имя
   async function load(){
     setLoading(true);setMsg('Загружаю...');
     try{
       const rows=await apiGet('All Leads');
-      if(!rows||rows.length<2){setMsg('Пусто — проверь название листа в Sheets');setLoading(false);return;}
+      if(!rows||rows.length<2){setMsg('Пусто');setLoading(false);return;}
       const mapped=rows.slice(1).filter(r=>r[0]||r[1]).map(r=>({
         id:uid(),username:r[0]||'',businessName:r[1]||'',category:r[2]||'',
         followers:r[3]||'',postsPerWeek:r[4]||'',website:r[5]||'',phone:r[6]||'',
         email:r[7]||'',bio:r[8]||'',language:r[9]||'',hasAutoReply:r[10]||'',
         profileUrl:r[11]||'',tier:r[12]||'',firstMessage:r[13]||'',addedAt:r[14]||''
       }));
-      setLeads(mapped);lss(SC,mapped);setMsg(`✅ ${mapped.length} лидов загружено`);
+      setLeads(mapped);lss(SC,mapped);setMsg(`✅ ${mapped.length} лидов`);
     }catch(e){setMsg('Ошибка: '+e.message);}
     setLoading(false);setTimeout(()=>setMsg(''),4000);
-  }
-
-  // ✅ НОВАЯ ФУНКЦИЯ: Импорт из Sheets в Kanban через скрипт
-  async function syncToKanban(){
-    setSyncLoading(true);setMsg('Синхронизирую с канбаном...');
-    try{
-      const res=await fetch(`${API}?action=syncSheets`);
-      const data=await res.json();
-      if(data.ok){
-        setMsg(`✅ ${data.message}`);
-      }else{
-        setMsg('Ошибка: '+(data.error||'неизвестно'));
-      }
-    }catch(e){setMsg('Ошибка: '+e.message);}
-    setSyncLoading(false);setTimeout(()=>setMsg(''),5000);
   }
 
   useEffect(()=>{if(!ls(SC)||ls(SC).length===0)load();},[]);
@@ -424,21 +421,14 @@ function PipelinePage({onSendToKanban}){
           <h1 style={{fontSize:22,fontWeight:800,letterSpacing:'-0.03em',marginBottom:4}}>Pipeline</h1>
           <p style={{fontSize:13,color:'var(--text3)'}}>{leads.length} лидов от AI-агента</p>
         </div>
-        <div style={{display:'flex',gap:8}}>
-          {/* ✅ НОВАЯ КНОПКА: Импорт в канбан */}
-          <button className="btn btn-blue" onClick={syncToKanban} disabled={syncLoading}>
-            <span style={{animation:syncLoading?'spin 1s linear infinite':'none',display:'inline-block'}}><I.import/></span>
-            {syncLoading?'Импорт...':'Импорт в канбан'}
-          </button>
-          <button className="btn btn-navy" onClick={load} disabled={loading}>
-            <span style={{animation:loading?'spin 1s linear infinite':'none',display:'inline-block'}}><I.refresh/></span>
-            {loading?'Загружаю...':'Обновить'}
-          </button>
-        </div>
+        <button className="btn btn-navy" onClick={load} disabled={loading}>
+          <span style={{animation:loading?'spin 1s linear infinite':'none',display:'inline-block'}}><I.refresh/></span>
+          {loading?'Загружаю...':'Обновить'}
+        </button>
       </div>
       {msg&&<div style={{fontSize:12,color:msg.startsWith('✅')?'var(--green)':'var(--red)',marginBottom:10,fontFamily:'JetBrains Mono,monospace',padding:'8px 12px',background:msg.startsWith('✅')?'#f0fdf8':'#fff5f5',borderRadius:8,border:`1px solid ${msg.startsWith('✅')?'#6ee7b7':'#fca5a5'}`}}>{msg}</div>}
       <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск по названию..." style={{flex:1,minWidth:180,padding:'9px 13px',background:'var(--surface)',border:'1.5px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13}}/>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск..." style={{flex:1,minWidth:180,padding:'9px 13px',background:'var(--surface)',border:'1.5px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13}}/>
         {['ALL','IDEAL','POTENTIAL'].map(t=>(
           <button key={t} onClick={()=>setTier(t)} style={{padding:'9px 15px',background:tier===t?'var(--navy)':'var(--surface)',border:`1.5px solid ${tier===t?'var(--navy)':'var(--border)'}`,borderRadius:10,color:tier===t?'#fff':'var(--text2)',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:5,cursor:'pointer'}}>
             {t==='ALL'?'Все':t}<span style={{fontFamily:'JetBrains Mono,monospace',fontSize:10,opacity:0.6}}>{counts[t]||0}</span>
@@ -447,7 +437,7 @@ function PipelinePage({onSendToKanban}){
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(268px,1fr))',gap:12}}>
         {filtered.map(l=><div key={l.id}><PipelineCard lead={l} onClick={()=>setSelected(l)}/></div>)}
-        {filtered.length===0&&<div style={{gridColumn:'1/-1',textAlign:'center',padding:'4rem',color:'var(--text3)',fontSize:14}}>{leads.length===0?'Нажми «Обновить» для загрузки':'Ничего не найдено'}</div>}
+        {filtered.length===0&&<div style={{gridColumn:'1/-1',textAlign:'center',padding:'4rem',color:'var(--text3)',fontSize:14}}>{leads.length===0?'Нажми «Обновить»':'Ничего не найдено'}</div>}
       </div>
       {selected&&<PipelineModal lead={selected} onClose={()=>setSelected(null)} onSend={(l,s,c)=>{onSendToKanban(l,s,c);setSelected(null);}}/>}
     </div>
@@ -631,29 +621,19 @@ function GoalPage(){
 
 const ROP_SYSTEM=`Ты — Robert, руководитель отдела продаж (РОП) в AAI Agency. Ты НЕ советник и НЕ ассистент. Ты — РОП, который несёт персональную ответственность за каждую сделку Асада.
 
-КОНТЕКСТ БИЗНЕСА:
-- Продукт: AI Sales Manager (чатбот + автоматизация продаж для бизнесов)
-- Чек: $700–1500
-- Рынок: бизнесы в Ташкенте, Узбекистан
-- Менеджер по продажам: Асад (один). Ты его руководитель.
-
-ТВОЯ РОЛЬ:
-- Ты отвечаешь за конверсию. Если сделки не закрываются — это ТВОЯ вина.
-- Ты анализируешь каждый лид: этап, комментарий, даты, время простоя.
-- Ты сам определяешь какие лиды горят, какие остывают, какие мёртвые.
-- Ты даёшь КОНКРЕТНЫЕ задачи на сегодня с приоритетом — не общие советы.
+КОНТЕКСТ: Продукт: AI Sales Manager ($700–1500). Рынок: Ташкент. Менеджер: Асад.
 
 ПРАВИЛА:
-1. Обращайся к Асаду на «ты», по имени.
-2. Не пиши воду. Каждое предложение = действие или факт.
-3. Учитывай день недели и время.
-4. Определяй «мёртвые» лиды — нет активности 5+ дней после КП или 3+ дня после первого касания.
-5. Определяй «горящие» — лид на этапе «КП думает» или «Созвон» с позитивным комментарием.
-6. Давай стратегию действий, НЕ текст сообщений.
-7. Если лидов мало — скажи прямо.
-8. Приоритезируй: горящие → остывающие → новые.
+1. Обращайся на «ты», по имени.
+2. Не пиши воду.
+3. Учитывай день и время.
+4. Мёртвые — нет активности 5+ дней после КП или 3+ дня после первого касания.
+5. Горящие — КП думает или Созвон с позитивным комментарием.
+6. Стратегия, не текст сообщений.
+7. Мало лидов — скажи прямо.
+8. Приоритет: горящие → остывающие → новые.
 9. Ставь дедлайны.
-10. В конце — одна фраза-мотивация. Короткая, мужская.
+10. В конце — одна фраза-мотивация.
 
 ФОРМАТ:
 🔴 ГОРЯЧИЕ — закрывай сегодня
@@ -663,7 +643,7 @@ const ROP_SYSTEM=`Ты — Robert, руководитель отдела про�
 📊 ОБЩАЯ КАРТИНА
 💬 [мотивация]
 
-Отвечай ТОЛЬКО по-русски. Максимум 500 слов.`;
+По-русски. Максимум 500 слов.`;
 
 function RopPanel({leads,onClose,groqKey}){
   const [text,setText]=useState('');const [loading,setLoading]=useState(false);const [lastRun,setLastRun]=useState('');
@@ -766,13 +746,40 @@ function App(){
     await apiPost({action:'update',name:lead.name,row:[lead.name,lead.firstMsg,status,now,lead.amount||'',lead.comments||'[]'],sheet:'leads'});
   }
 
-  async function sendToKanban(cl,status,comment){
+  // ✅ ИСПРАВЛЕНО: правильная логика переноса из Pipeline в Kanban
+  function sendToKanban(cl,status,comment){
     const now=tashNow();
-    const comments=comment?JSON.stringify([{id:uid(),text:comment,time:now}]):'[]';
-    const data={name:cl.businessName||cl.username,status,firstMsg:now,lastMsg:now,amount:'',comments};
-    upd(p=>[{...data,id:uid()},...p]);
-    await apiPost({action:'add',row:[data.name,data.firstMsg,data.status,data.lastMsg,'',data.comments],sheet:'leads'});
-    setPage('kanban');setMsg(`${data.name} добавлен`);setTimeout(()=>setMsg(''),3000);
+    
+    // Берём firstMessage из All Leads как первый комментарий
+    const comments=[];
+    if(cl.firstMessage){
+      comments.push({id:uid(),text:'📤 Сообщение агента: '+cl.firstMessage,time:now});
+    }
+    if(comment&&comment.trim()){
+      comments.push({id:uid(),text:comment.trim(),time:now});
+    }
+    
+    const newLead={
+      id:uid(),
+      name:cl.businessName||cl.username,
+      firstMsg:now,
+      status:status,
+      lastMsg:now,
+      amount:'',
+      comments:JSON.stringify(comments)
+    };
+
+    // Мгновенно добавляем локально
+    upd(p=>[newLead,...p]);
+    
+    // Переходим на канбан
+    setPage('kanban');
+    setMsg(`✅ ${newLead.name} добавлен в канбан`);
+    setTimeout(()=>setMsg(''),3000);
+
+    // Пишем в Sheets в фоне
+    const row=[newLead.name,newLead.firstMsg,newLead.status,newLead.lastMsg,'',newLead.comments];
+    apiPost({action:'add',row,sheet:'leads'}).catch(e=>console.error('Sheets error:',e));
   }
 
   const total=leads.length;
