@@ -76,6 +76,9 @@ const STAGES=[
 const TIER={IDEAL:{c:'#059669',bg:'#ecfdf5'},POTENTIAL:{c:'#2563eb',bg:'#eff6ff'},LOW:{c:'#9ca3af',bg:'#f3f4f6'}};
 
 const LOGO='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzIiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCA3MiAzMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAyOEwxMyAzTDI0IDI4IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMjcgMjhMMzggM0w0OSAyOCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJidXR0IiBmaWxsPSJub25lIi8+PGxpbmUgeDE9IjU4IiB5MT0iNCIgeDI9IjU4IiB5Mj0iMjgiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0iYnV0dCIvPjwvc3ZnPg=='
+
+function fmtDate(v){
+  if(!v)return'';
   if(typeof v==='string'&&v.includes('T')){
     const t=new Date(new Date(v).getTime()+5*3600000);
     return `${t.getUTCDate().toString().padStart(2,'0')}.${(t.getUTCMonth()+1).toString().padStart(2,'0')}.${t.getUTCFullYear()} ${t.getUTCHours().toString().padStart(2,'0')}:${t.getUTCMinutes().toString().padStart(2,'0')}`;
