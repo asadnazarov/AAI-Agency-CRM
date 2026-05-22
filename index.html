@@ -11,7 +11,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#0d1b3e;--navy2:#1a2f5e;--bg:#f8faff;--surface:#ffffff;--border:#e8edf8;--border2:#c7d2ee;--text:#0d1b3e;--text2:#4a5580;--text3:#94a3c8;--green:#059669;--green-bg:#f0fdf8;--red:#ef4444;--red-bg:#fff5f5;--blue:#2563eb;
+  --navy:#1e2742;--navy2:#2a3a5c;--bg:#f4f5f7;--surface:#ffffff;--border:#e5e7eb;--border2:#d1d5db;--text:#1f2937;--text2:#6b7280;--text3:#9ca3af;--green:#16a34a;--green-bg:#f0fdf4;--red:#ef4444;--red-bg:#fef2f2;--blue:#3b82f6;
 }
 html{font-size:15px}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
@@ -31,8 +31,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--navy)!im
 @keyframes win-glow{0%,100%{filter:drop-shadow(0 0 20px #f59e0b) drop-shadow(0 0 50px #fbbf24)}50%{filter:drop-shadow(0 0 40px #f59e0b) drop-shadow(0 0 80px #fbbf24)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes confetti-fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(140px) rotate(720deg);opacity:0}}
-.kcard{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;height:112px;cursor:pointer;transition:all 0.2s ease;animation:cardIn 0.3s ease both}
-.kcard:hover{border-color:var(--border2);box-shadow:0 6px 20px rgba(13,27,62,0.09);transform:translateY(-2px)}
+.kcard{background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.15s ease;animation:cardIn 0.3s ease both;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.kcard:hover{border-color:var(--border2);box-shadow:0 4px 12px rgba(0,0,0,0.1);transform:translateY(-1px)}
 .kcard:active{transform:scale(0.99)}
 .kcard.sale{border-left:3px solid var(--green);background:var(--green-bg)}
 .kcard.lost{border-left:3px solid var(--red);background:var(--red-bg)}
@@ -50,7 +50,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--navy)!im
 .inp{width:100%;padding:10px 13px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;transition:all 0.15s}
 .slink{width:100%;padding:9px 12px;border:none;border-radius:9px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:9px;background:transparent;color:rgba(255,255,255,0.45);cursor:pointer;transition:all 0.15s;margin-bottom:2px;text-align:left;font-family:'DM Sans',sans-serif}
 .slink:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85)}
-.slink.act{background:rgba(255,255,255,0.14);color:#fff;font-weight:600}
+.slink.act{background:rgba(255,255,255,0.12);color:#fff;font-weight:600;border-left:3px solid #fff}
 .modal-wrap{position:fixed;inset:0;background:rgba(13,27,62,0.4);display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem;animation:fadeIn 0.15s ease}
 .modal-box{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;max-width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(13,27,62,0.18);animation:slideUp 0.22s ease}
 .col-head{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-radius:10px 10px 0 0;margin-bottom:0}
@@ -75,22 +75,7 @@ const STAGES=[
 ];
 const TIER={IDEAL:{c:'#059669',bg:'#ecfdf5'},POTENTIAL:{c:'#2563eb',bg:'#eff6ff'},LOW:{c:'#9ca3af',bg:'#f3f4f6'}};
 
-const LOGO='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTAiIGhlaWdodD0iMzgiIHZpZXdCb3g9IjAgMCA5MCAzOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAzNUwxNiA0TDMwIDM1IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJzcXVhcmUiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMzMgMzVMNDcgNEw2MSAzNSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0ic3F1YXJlIiBmaWxsPSJub25lIi8+PGxpbmUgeDE9IjcyIiB5MT0iNSIgeDI9IjcyIiB5Mj0iMzUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InNxdWFyZSIvPjwvc3ZnPg=='
-
-function ls(k){try{const r=localStorage.getItem(k);return r?JSON.parse(r):null}catch{return null}}
-function lss(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
-function tashNow(){
-  const t=new Date(new Date().getTime()+5*3600000);
-  return `${t.getUTCDate().toString().padStart(2,'0')}.${(t.getUTCMonth()+1).toString().padStart(2,'0')}.${t.getUTCFullYear()} ${t.getUTCHours().toString().padStart(2,'0')}:${t.getUTCMinutes().toString().padStart(2,'0')}`;
-}
-function tashDay(){
-  const days=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
-  const t=new Date(new Date().getTime()+5*3600000);
-  return{day:days[t.getUTCDay()],hour:t.getUTCHours(),date:tashNow()};
-}
-function fmtDate(v){
-  if(!v)return'';
+const LOGO='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzIiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCA3MiAzMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAyOEwxMyAzTDI0IDI4IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMjcgMjhMMzggM0w0OSAyOCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJidXR0IiBmaWxsPSJub25lIi8+PGxpbmUgeDE9IjU4IiB5MT0iNCIgeDI9IjU4IiB5Mj0iMjgiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0iYnV0dCIvPjwvc3ZnPg=='
   if(typeof v==='string'&&v.includes('T')){
     const t=new Date(new Date(v).getTime()+5*3600000);
     return `${t.getUTCDate().toString().padStart(2,'0')}.${(t.getUTCMonth()+1).toString().padStart(2,'0')}.${t.getUTCFullYear()} ${t.getUTCHours().toString().padStart(2,'0')}:${t.getUTCMinutes().toString().padStart(2,'0')}`;
@@ -134,14 +119,7 @@ const I={
 };
 
 function Wave(){
-  return(
-    <div style={{position:'relative',height:40,flexShrink:0,overflow:'hidden',background:'var(--bg)'}}>
-      <svg viewBox="0 0 1440 40" preserveAspectRatio="none" style={{position:'absolute',bottom:0,width:'200%',height:40,animation:'waveMove 6s linear infinite'}}>
-        <path d="M0,20 C180,40 360,0 540,20 C720,40 900,0 1080,20 C1260,40 1440,0 1440,20 L1440,40 L0,40 Z" fill="rgba(13,27,62,0.06)"/>
-        <path d="M0,26 C200,8 400,40 600,26 C800,12 1000,40 1200,26 C1340,18 1400,30 1440,26 L1440,40 L0,40 Z" fill="rgba(13,27,62,0.04)"/>
-      </svg>
-    </div>
-  );
+  return <div style={{height:1,background:'var(--border)',flexShrink:0}}/>;
 }
 
 function LeadModal({lead,onClose,onSave,onDelete}){
@@ -253,20 +231,24 @@ function KCard({lead,onClick,delay}){
   const isLost=lead.status==='Not interested';
   const comments=useMemo(()=>parseComments(lead.comments),[lead.comments]);
   const last=comments[comments.length-1];
+  const initials=(lead.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const avatarColors=['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981','#f43f5e','#3b82f6','#ec4899'];
+  const avatarColor=avatarColors[(lead.name||'').charCodeAt(0)%avatarColors.length];
   return(
-    <div className={`kcard${isSale?' sale':isLost?' lost':''}`} style={{padding:'13px 15px',animationDelay:`${delay*0.06}s`,display:'flex',flexDirection:'column',justifyContent:'space-between'}} onClick={onClick}>
-      <div>
-        <div style={{fontSize:14,fontWeight:700,letterSpacing:'-0.02em',color:'var(--text)',marginBottom:6,lineHeight:1.3,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:1,WebkitBoxOrient:'vertical'}}>{lead.name}</div>
-        <div style={{fontSize:12,color:'var(--text2)',lineHeight:1.6,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',minHeight:38}}>
-          {last?last.text:<span style={{color:'var(--text3)',fontStyle:'italic'}}>Нет комментариев</span>}
+    <div className={`kcard${isSale?' sale':isLost?' lost':''}`} style={{padding:'10px 12px',animationDelay:`${delay*0.06}s`}} onClick={onClick}>
+      <div style={{display:'flex',alignItems:'flex-start',gap:9,marginBottom:7}}>
+        <div style={{width:30,height:30,borderRadius:'50%',background:avatarColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'#fff',flexShrink:0,letterSpacing:'0.02em'}}>{initials}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:600,color:'var(--text)',lineHeight:1.35,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{lead.name}</div>
         </div>
       </div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:8,borderTop:'1px solid var(--border)',marginTop:6}}>
-        <span style={{fontSize:10,color:'var(--text3)',fontFamily:'JetBrains Mono,monospace'}}>{fmtDate(lead.lastMsg)?.split(' ')[0]||'—'}</span>
-        <div style={{display:'flex',gap:6,alignItems:'center'}}>
-          {comments.length>0&&<span style={{fontSize:10,color:'var(--text3)',display:'flex',alignItems:'center',gap:3}}><I.msg/>{comments.length}</span>}
-          {isSale&&lead.amount&&<span style={{fontSize:11,fontWeight:700,color:'var(--green)',fontFamily:'JetBrains Mono,monospace'}}>${lead.amount}</span>}
-          {isLost&&<span style={{fontSize:10,fontWeight:700,color:'var(--red)'}}>✕</span>}
+      {last&&<div style={{fontSize:11,color:'var(--text2)',lineHeight:1.5,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',marginBottom:8,paddingLeft:39}}>{last.text}</div>}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:7,borderTop:'1px solid var(--border)',paddingLeft:39}}>
+        <span style={{fontSize:10,color:'var(--text3)'}}>{fmtDate(lead.lastMsg)?.split(' ')[0]||'—'}</span>
+        <div style={{display:'flex',gap:5,alignItems:'center'}}>
+          {comments.length>0&&<span style={{fontSize:10,color:'var(--text3)',display:'flex',alignItems:'center',gap:2}}><I.msg/>{comments.length}</span>}
+          {isSale&&lead.amount&&<span style={{fontSize:10,fontWeight:700,color:'var(--green)'}}>${lead.amount}</span>}
+          {isLost&&<span style={{fontSize:10,color:'var(--red)'}}>отказ</span>}
         </div>
       </div>
     </div>
@@ -278,26 +260,26 @@ function KanbanBoard({leads,onCardClick,onMove,onAdd}){
   const [dragging,setDragging]=useState(null);
   return(
     <div style={{overflowX:'auto',paddingBottom:'1.5rem',flex:1}}>
-      <div style={{display:'flex',gap:12,minWidth:'max-content',alignItems:'flex-start',paddingBottom:4}}>
+      <div style={{display:'flex',gap:10,minWidth:'max-content',alignItems:'flex-start',paddingBottom:4}}>
         {STAGES.map(st=>{
           const sl=leads.filter(l=>l.status===st.id);
           const isOver=over===st.id;
           return(
-            <div key={st.id} style={{width:240,flexShrink:0}}>
-              <div className="col-head" style={{background:st.color}}>
+            <div key={st.id} style={{width:255,flexShrink:0}}>
+              <div style={{background:st.color,borderRadius:'8px 8px 0 0',padding:'9px 12px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <span style={{fontSize:12,fontWeight:700,color:'#fff',letterSpacing:'-0.01em'}}>{st.label}</span>
-                <span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.85)',background:'rgba(255,255,255,0.2)',padding:'2px 8px',borderRadius:20,fontFamily:'JetBrains Mono,monospace'}}>{sl.length}</span>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.85)',background:'rgba(255,255,255,0.2)',padding:'1px 7px',borderRadius:20}}>{sl.length}</span>
+                  <button onClick={()=>onAdd(st.id)} style={{width:20,height:20,background:'rgba(255,255,255,0.2)',border:'none',borderRadius:4,color:'#fff',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',lineHeight:1,paddingBottom:1}}>+</button>
+                </div>
               </div>
-              <div onDragOver={e=>{e.preventDefault();setOver(st.id);}} onDrop={e=>{e.preventDefault();const id=e.dataTransfer.getData('lid');if(id)onMove(id,st.id);setOver(null);}} onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setOver(null);}} style={{display:'flex',flexDirection:'column',gap:9,minHeight:80,padding:isOver?6:0,borderRadius:12,border:isOver?'2px dashed rgba(13,27,62,0.2)':'2px dashed transparent',background:isOver?'rgba(13,27,62,0.02)':'transparent',transition:'all 0.15s'}}>
+              <div onDragOver={e=>{e.preventDefault();setOver(st.id);}} onDrop={e=>{e.preventDefault();const id=e.dataTransfer.getData('lid');if(id)onMove(id,st.id);setOver(null);}} onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setOver(null);}} style={{display:'flex',flexDirection:'column',gap:6,minHeight:100,padding:8,borderRadius:'0 0 8px 8px',border:'1px solid #e5e7eb',borderTop:'none',background:isOver?'rgba(0,0,0,0.03)':'#f9fafb',transition:'all 0.15s'}}>
                 {sl.map((l,i)=>(
                   <div key={l.id} draggable onDragStart={e=>{e.dataTransfer.setData('lid',l.id);setDragging(l.id);}} onDragEnd={()=>{setDragging(null);setOver(null);}} style={{opacity:dragging===l.id?0.3:1,transition:'opacity 0.15s'}}>
                     <KCard lead={l} onClick={()=>onCardClick(l)} delay={i}/>
                   </div>
                 ))}
               </div>
-              <button onClick={()=>onAdd(st.id)} style={{width:'100%',marginTop:9,padding:'10px 0',border:'1.5px dashed var(--border)',borderRadius:11,background:'transparent',color:'var(--text3)',fontSize:12,fontWeight:500,display:'flex',alignItems:'center',justifyContent:'center',gap:5,cursor:'pointer',transition:'all 0.15s'}} onMouseEnter={e=>{e.currentTarget.style.background='var(--surface)';e.currentTarget.style.color='var(--text2)';e.currentTarget.style.borderColor='var(--border2)';}} onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text3)';e.currentTarget.style.borderColor='var(--border)';}}>
-                <I.plus/>Добавить
-              </button>
             </div>
           );
         })}
@@ -795,9 +777,9 @@ function App(){
 
   return(
     <div style={{display:'flex',minHeight:'100vh',background:'var(--bg)'}}>
-      <aside style={{width:220,flexShrink:0,background:'var(--navy)',display:'flex',flexDirection:'column',height:'100vh',position:'sticky',top:0}}>
+      <aside style={{width:210,flexShrink:0,background:'var(--navy)',display:'flex',flexDirection:'column',height:'100vh',position:'sticky',top:0,boxShadow:'2px 0 8px rgba(0,0,0,0.15)'}}>
         <div style={{padding:'20px 16px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',display:'flex',justifyContent:'center'}}>
-          <img src={LOGO} alt="AAI Agency" style={{width:120,height:40,objectFit:'contain'}}/>
+          <img src={LOGO} alt="AAI Agency" style={{width:80,height:30,objectFit:'contain'}}/>
         </div>
         <div style={{padding:'12px 12px 6px'}}>
           <button onClick={()=>setNewModal({status:STAGES[0].id})} style={{width:'100%',padding:'9px 14px',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:10,color:'#fff',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:'pointer',fontFamily:'DM Sans,sans-serif',transition:'all 0.15s'}} onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.16)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.1)'}><I.plus/>Новый лид</button>
@@ -823,9 +805,9 @@ function App(){
       </aside>
 
       <main style={{flex:1,display:'flex',flexDirection:'column',minWidth:0}}>
-        <div style={{padding:'15px 26px 12px',borderBottom:'1.5px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,background:'var(--surface)',zIndex:10,boxShadow:'0 1px 0 var(--border)'}}>
+        <div style={{padding:'12px 24px',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,background:'var(--surface)',zIndex:10,boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>
           <div>
-            <h1 style={{fontSize:19,fontWeight:800,letterSpacing:'-0.03em'}}>{NAV.find(n=>n.id===page)?.label||'AAI CRM'}</h1>
+            <h1 style={{fontSize:18,fontWeight:700,letterSpacing:'-0.02em',color:'var(--text)'}}>{NAV.find(n=>n.id===page)?.label||'AAI CRM'}</h1>
             {page==='kanban'&&<p style={{fontSize:11,color:'var(--text3)',marginTop:1,fontFamily:'JetBrains Mono,monospace'}}>{total} лидов · {active} активных · {won} продаж</p>}
           </div>
           <div style={{display:'flex',gap:9}}>
@@ -835,7 +817,7 @@ function App(){
             </button>
           </div>
         </div>
-        <div style={{flex:1,padding:'20px 26px',overflowY:'auto',display:'flex',flexDirection:'column'}}>
+        <div style={{flex:1,padding:'16px 20px',overflowY:'auto',display:'flex',flexDirection:'column'}}>
           {page==='kanban'&&<KanbanBoard leads={leads} onCardClick={l=>setSelectedLead(l)} onMove={moveLead} onAdd={s=>setNewModal({status:s})}/>}
           {page==='pipeline'&&<PipelinePage onSendToKanban={sendToKanban}/>}
           {page==='analytics'&&<AnalyticsPage leads={leads} groqKey={groqKey}/>}
@@ -855,3 +837,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
+
+
+
+
+
