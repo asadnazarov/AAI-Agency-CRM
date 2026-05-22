@@ -53,7 +53,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--navy)!im
 .slink.act{background:rgba(255,255,255,0.14);color:#fff;font-weight:600}
 .modal-wrap{position:fixed;inset:0;background:rgba(13,27,62,0.4);display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem;animation:fadeIn 0.15s ease}
 .modal-box{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;max-width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(13,27,62,0.18);animation:slideUp 0.22s ease}
-.col-head{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;margin-bottom:9px}
+.col-head{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-radius:10px 10px 0 0;margin-bottom:0}
 </style>
 </head>
 <body>
@@ -66,16 +66,16 @@ const API = 'https://script.google.com/macros/s/AKfycbzlEiUktgoZmO4DCrSXh1x6kMKI
 const SK='aai_k_v11';const SC='aai_c_v11';const SG='aai_goal_v3';
 
 const STAGES=[
-  {id:'Sent first message',label:'Первое касание'},
-  {id:'Sent demo',label:'Демо отправлено'},
-  {id:'Thinking on KP',label:'КП — думает'},
-  {id:'Booked a call',label:'Созвон'},
-  {id:'Closed',label:'Продажа'},
-  {id:'Not interested',label:'Отказ'},
+  {id:'Sent first message',label:'Первое касание',color:'#3b82f6'},
+  {id:'Sent demo',label:'Демо отправлено',color:'#06b6d4'},
+  {id:'Thinking on KP',label:'КП — думает',color:'#f59e0b'},
+  {id:'Booked a call',label:'Созвон',color:'#8b5cf6'},
+  {id:'Closed',label:'Продажа',color:'#10b981'},
+  {id:'Not interested',label:'Отказ',color:'#ef4444'},
 ];
 const TIER={IDEAL:{c:'#059669',bg:'#ecfdf5'},POTENTIAL:{c:'#2563eb',bg:'#eff6ff'},LOW:{c:'#9ca3af',bg:'#f3f4f6'}};
 
-const LOGO='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTIwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0ZXh0IHg9IjYiIHk9IjI4IiBmb250LWZhbWlseT0iRE0gU2FucyIgZm9udC13ZWlnaHQ9IjgwMCIgZm9udC1zaXplPSIyNiIgZmlsbD0id2hpdGUiPkFBSTwvdGV4dD48dGV4dCB4PSI2IiB5PSIzOCIgZm9udC1mYW1pbHk9IkRNIFNhbnMiIGZvbnQtd2VpZ2h0PSI0MDAiIGZvbnQtc2l6ZT0iOSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjUpIj5BR0VOQ1k8L3RleHQ+PC9zdmc+';
+const LOGO='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTAiIGhlaWdodD0iMzgiIHZpZXdCb3g9IjAgMCA5MCAzOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAzNUwxNiA0TDMwIDM1IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJzcXVhcmUiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMzMgMzVMNDcgNEw2MSAzNSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0ic3F1YXJlIiBmaWxsPSJub25lIi8+PGxpbmUgeDE9IjcyIiB5MT0iNSIgeDI9IjcyIiB5Mj0iMzUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InNxdWFyZSIvPjwvc3ZnPg=='
 
 function ls(k){try{const r=localStorage.getItem(k);return r?JSON.parse(r):null}catch{return null}}
 function lss(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
@@ -284,9 +284,9 @@ function KanbanBoard({leads,onCardClick,onMove,onAdd}){
           const isOver=over===st.id;
           return(
             <div key={st.id} style={{width:240,flexShrink:0}}>
-              <div className="col-head">
-                <span style={{fontSize:12,fontWeight:700,color:'var(--text)',letterSpacing:'-0.01em'}}>{st.label}</span>
-                <span style={{fontSize:10,fontWeight:700,color:'var(--text3)',background:'var(--bg)',padding:'2px 8px',borderRadius:20,fontFamily:'JetBrains Mono,monospace'}}>{sl.length}</span>
+              <div className="col-head" style={{background:st.color}}>
+                <span style={{fontSize:12,fontWeight:700,color:'#fff',letterSpacing:'-0.01em'}}>{st.label}</span>
+                <span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.85)',background:'rgba(255,255,255,0.2)',padding:'2px 8px',borderRadius:20,fontFamily:'JetBrains Mono,monospace'}}>{sl.length}</span>
               </div>
               <div onDragOver={e=>{e.preventDefault();setOver(st.id);}} onDrop={e=>{e.preventDefault();const id=e.dataTransfer.getData('lid');if(id)onMove(id,st.id);setOver(null);}} onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setOver(null);}} style={{display:'flex',flexDirection:'column',gap:9,minHeight:80,padding:isOver?6:0,borderRadius:12,border:isOver?'2px dashed rgba(13,27,62,0.2)':'2px dashed transparent',background:isOver?'rgba(13,27,62,0.02)':'transparent',transition:'all 0.15s'}}>
                 {sl.map((l,i)=>(
