@@ -401,7 +401,7 @@ function PipelinePage({onSendToKanban}){
     setLoading(false);setTimeout(()=>setMsg(''),4000);
   }
 
-  useEffect(()=>{if(!ls(SC)||ls(SC).length===0)load();},[]);
+  useEffect(()=>{load();},[]);
 
   const filtered=useMemo(()=>leads.filter(l=>{
     const q=search.toLowerCase();
