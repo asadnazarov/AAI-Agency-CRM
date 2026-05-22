@@ -255,11 +255,11 @@ function KCard({lead,onClick,delay}){
       <div style={{display:'flex',alignItems:'flex-start',gap:9,marginBottom:7}}>
         <div style={{width:30,height:30,borderRadius:'50%',background:avatarColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'#fff',flexShrink:0,letterSpacing:'0.02em'}}>{initials}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,fontWeight:600,color:'#e8e8f4',lineHeight:1.35,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{lead.name}</div>
+          <div style={{fontSize:13,fontWeight:600,color:'#111827',lineHeight:1.35,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{lead.name}</div>
         </div>
       </div>
-      {last&&<div style={{fontSize:11,color:'var(--text2)',lineHeight:1.5,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',marginBottom:8,paddingLeft:39}}>{last.text}</div>}
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:7,borderTop:'1px solid var(--border)',paddingLeft:39}}>
+      {last&&<div style={{fontSize:11,color:'#6b7280',lineHeight:1.5,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',marginBottom:8,paddingLeft:39}}>{last.text}</div>}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:7,borderTop:'1px solid rgba(0,0,0,0.08)',paddingLeft:39}}>
         <span style={{fontSize:10,color:'var(--text3)'}}>{fmtDate(lead.lastMsg)?.split(' ')[0]||'—'}</span>
         <div style={{display:'flex',gap:5,alignItems:'center'}}>
           {comments.length>0&&<span style={{fontSize:10,color:'var(--text3)',display:'flex',alignItems:'center',gap:2}}><I.msg/>{comments.length}</span>}
@@ -350,26 +350,25 @@ function PipelineModal({lead,onSend,onClose}){
 }
 
 function PipelineCard({lead,onClick}){
-  const tc=TIER[lead.tier]||{c:'var(--text3)',bg:'var(--bg)'};
+  const tc=TIER[lead.tier]||{c:'#9ca3af',bg:'rgba(156,163,175,0.1)'};
+  const name=lead.businessName||lead.username||'—';
+  const initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const avatarColors=['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981','#f43f5e','#3b82f6','#ec4899'];
+  const avatarColor=avatarColors[name.charCodeAt(0)%avatarColors.length];
   return(
-    <div style={{background:'var(--surface)',border:'1.5px solid var(--border)',borderRadius:13,cursor:'pointer',overflow:'hidden',transition:'all 0.2s ease'}} onClick={onClick} onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.boxShadow='0 6px 20px rgba(13,27,62,0.08)';e.currentTarget.style.transform='translateY(-2px)';}} onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.boxShadow='none';e.currentTarget.style.transform='none';}}>
-      <div style={{height:58,background:'var(--bg)',clipPath:'polygon(0 0,100% 0,100% 62%,0 100%)',display:'flex',alignItems:'center',padding:'0 16px'}}>
-        <span style={{fontSize:10,fontWeight:700,letterSpacing:'0.1em',color:'var(--text3)',textTransform:'uppercase'}}>{lead.username}</span>
+    <div style={{background:'#ffffff',border:'1px solid rgba(0,0,0,0.06)',borderRadius:10,cursor:'pointer',transition:'all 0.18s ease',boxShadow:'0 2px 8px rgba(0,0,0,0.22)',padding:'10px 12px'}} onClick={onClick} onMouseEnter={e=>{e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.32)';e.currentTarget.style.transform='translateY(-2px)';}} onMouseLeave={e=>{e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.22)';e.currentTarget.style.transform='none';}}>
+      <div style={{display:'flex',alignItems:'flex-start',gap:9,marginBottom:7}}>
+        <div style={{width:30,height:30,borderRadius:'50%',background:avatarColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'#fff',flexShrink:0}}>{initials}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:600,color:'#111827',lineHeight:1.35,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{name}</div>
+          {lead.category&&<div style={{fontSize:11,color:'#9ca3af',marginTop:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lead.category.split(',')[0].trim()}</div>}
+        </div>
+        {lead.tier&&<span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:20,color:tc.c,background:tc.bg,flexShrink:0,letterSpacing:'0.04em'}}>{lead.tier}</span>}
       </div>
-      <div style={{padding:'12px 16px 14px'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
-          <span style={{fontSize:11,color:'var(--text3)',fontWeight:500}}>{lead.category?.split(',')[0]?.trim()}</span>
-          {lead.tier&&<span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,color:tc.c,background:tc.bg}}>{lead.tier}</span>}
-        </div>
-        <div style={{fontSize:15,fontWeight:800,letterSpacing:'-0.02em',lineHeight:1.25,marginBottom:10,color:'#e8e8f4'}}>{lead.businessName||lead.username}</div>
-        <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:12}}>
-          {lead.followers&&<span style={{fontSize:11,padding:'2px 9px',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:5,color:'var(--text2)',fontFamily:'JetBrains Mono,monospace'}}>{Number(lead.followers).toLocaleString()}</span>}
-          {lead.language&&<span style={{fontSize:11,padding:'2px 9px',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:5,color:'var(--text2)',fontFamily:'JetBrains Mono,monospace'}}>{lead.language.toUpperCase()}</span>}
-          {lead.hasAutoReply==='Yes'&&<span style={{fontSize:11,padding:'2px 9px',background:'#ecfdf5',border:'1.5px solid #6ee7b7',borderRadius:5,color:'var(--green)',fontWeight:600}}>авто-ответ</span>}
-        </div>
-        <button className="btn btn-navy" style={{width:'100%',justifyContent:'center',fontSize:12,padding:'9px'}} onClick={e=>{e.stopPropagation();onClick();}}>
-          В канбан <I.arR/>
-        </button>
+      {lead.firstMessage&&<div style={{fontSize:11,color:'#6b7280',lineHeight:1.5,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',marginBottom:8,paddingLeft:39}}>{lead.firstMessage}</div>}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:7,borderTop:'1px solid rgba(0,0,0,0.08)',paddingLeft:39}}>
+        <span style={{fontSize:10,color:'#9ca3af'}}>{lead.followers?`${lead.followers} подп.`:lead.username||''}</span>
+        <span style={{fontSize:10,color:lead.hasAutoReply==='Да'?'#22c55e':'#9ca3af'}}>{lead.hasAutoReply==='Да'?'авто-ответ':''}</span>
       </div>
     </div>
   );
@@ -416,8 +415,8 @@ function PipelinePage({onSendToKanban}){
     <div style={{animation:'fadeUp 0.2s ease'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20,flexWrap:'wrap',gap:12}}>
         <div>
-          <h1 style={{fontSize:22,fontWeight:800,letterSpacing:'-0.03em',marginBottom:4}}>Pipeline</h1>
-          <p style={{fontSize:13,color:'var(--text3)'}}>{leads.length} лидов от AI-агента</p>
+          <h1 style={{fontSize:18,fontWeight:700,color:'#e8e8f4',marginBottom:4}}>Pipeline</h1>
+          <p style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>{leads.length} лидов от AI-агента</p>
         </div>
         <button className="btn btn-navy" onClick={load} disabled={loading}>
           <span style={{animation:loading?'spin 1s linear infinite':'none',display:'inline-block'}}><I.refresh/></span>
@@ -426,16 +425,16 @@ function PipelinePage({onSendToKanban}){
       </div>
       {msg&&<div style={{fontSize:12,color:msg.startsWith('✅')?'var(--green)':'var(--red)',marginBottom:10,fontFamily:'JetBrains Mono,monospace',padding:'8px 12px',background:msg.startsWith('✅')?'#f0fdf8':'#fff5f5',borderRadius:8,border:`1px solid ${msg.startsWith('✅')?'#6ee7b7':'#fca5a5'}`}}>{msg}</div>}
       <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск..." style={{flex:1,minWidth:180,padding:'9px 13px',background:'var(--surface)',border:'1.5px solid var(--border)',borderRadius:10,color:'#e8e8f4',fontSize:13}}/>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск..." style={{flex:1,minWidth:180,padding:'9px 13px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,color:'#e8e8f4',fontSize:13}}/>
         {['ALL','IDEAL','POTENTIAL'].map(t=>(
-          <button key={t} onClick={()=>setTier(t)} style={{padding:'9px 15px',background:tier===t?'var(--navy)':'var(--surface)',border:`1.5px solid ${tier===t?'var(--navy)':'var(--border)'}`,borderRadius:10,color:tier===t?'#fff':'var(--text2)',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:5,cursor:'pointer'}}>
+          <button key={t} onClick={()=>setTier(t)} style={{padding:'9px 15px',background:tier===t?'#6366f1':'rgba(255,255,255,0.05)',border:`1.5px solid ${tier===t?'var(--navy)':'var(--border)'}`,borderRadius:10,color:tier===t?'#fff':'rgba(255,255,255,0.5)',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:5,cursor:'pointer'}}>
             {t==='ALL'?'Все':t}<span style={{fontFamily:'JetBrains Mono,monospace',fontSize:10,opacity:0.6}}>{counts[t]||0}</span>
           </button>
         ))}
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(268px,1fr))',gap:12}}>
         {filtered.map(l=><div key={l.id}><PipelineCard lead={l} onClick={()=>setSelected(l)}/></div>)}
-        {filtered.length===0&&<div style={{gridColumn:'1/-1',textAlign:'center',padding:'4rem',color:'var(--text3)',fontSize:14}}>{leads.length===0?'Нажми «Обновить»':'Ничего не найдено'}</div>}
+        {filtered.length===0&&<div style={{gridColumn:'1/-1',textAlign:'center',padding:'4rem',color:'rgba(255,255,255,0.25)',fontSize:14}}>{leads.length===0?'Нажми «Обновить»':'Ничего не найдено'}</div>}
       </div>
       {selected&&<PipelineModal lead={selected} onClose={()=>setSelected(null)} onSend={(l,s,c)=>{onSendToKanban(l,s,c);setSelected(null);}}/>}
     </div>
@@ -559,7 +558,7 @@ function GoalPage(){
     <div style={{animation:'fadeUp 0.2s ease',maxWidth:660,margin:'0 auto'}}>
       {confetti&&<Confetti/>}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20,flexWrap:'wrap',gap:12}}>
-        <div><h1 style={{fontSize:22,fontWeight:800,letterSpacing:'-0.03em',marginBottom:4}}>Цель на 30 дней</h1><p style={{fontSize:13,color:'var(--text3)'}}>Старт: {g.startDate?.split(' ')[0]} · Осталось {daysLeft} дн.</p></div>
+        <div><h1 style={{fontSize:18,fontWeight:700,color:'#e8e8f4',marginBottom:4}}>Цель на 30 дней</h1><p style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>Старт: {g.startDate?.split(' ')[0]} · Осталось {daysLeft} дн.</p></div>
         <button className="btn btn-outline" onClick={()=>setEditGoal(true)}><I.edit/>Изменить</button>
       </div>
       <div style={{background:'var(--surface)',border:'1.5px solid var(--border)',borderRadius:16,padding:'22px',marginBottom:14,textAlign:'center'}}>
@@ -853,6 +852,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
+
+
+
+
 
 
 
