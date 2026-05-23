@@ -351,7 +351,7 @@ function PipelineModal({lead,onSend,onClose}){
 
 function PipelineCard({lead,onClick}){
   const tc=TIER[lead.tier]||{c:'#9ca3af',bg:'rgba(156,163,175,0.1)'};
-  const name=lead.businessName||lead.username||'—';
+  const name=String(lead.businessName||lead.username||'—');
   const initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   const avatarColors=['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981','#f43f5e','#3b82f6','#ec4899'];
   const avatarColor=avatarColors[name.charCodeAt(0)%avatarColors.length];
@@ -852,6 +852,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
+
 
 
 
