@@ -247,9 +247,9 @@ function KCard({lead,onClick,delay}){
   const isLost=lead.status==='Not interested';
   const comments=useMemo(()=>parseComments(lead.comments),[lead.comments]);
   const last=comments[comments.length-1];
-  const initials=(lead.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const initials=String(lead.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   const avatarColors=['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981','#f43f5e','#3b82f6','#ec4899'];
-  const avatarColor=avatarColors[(lead.name||'').charCodeAt(0)%avatarColors.length];
+  const avatarColor=avatarColors[String(lead.name||'').charCodeAt(0)%avatarColors.length];
   return(
     <div className={`kcard${isSale?' sale':isLost?' lost':''}`} style={{padding:'10px 12px',animationDelay:`${delay*0.06}s`}} onClick={onClick}>
       <div style={{display:'flex',alignItems:'flex-start',gap:9,marginBottom:7}}>
