@@ -52,7 +52,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:rgba(99,102,24
 .slink:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85)}
 .slink.act{background:rgba(99,102,241,0.18);color:#fff;font-weight:600;border-left:3px solid #818cf8}
 .modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem;animation:fadeIn 0.15s ease}
-.modal-box{background:#16172a;border:1px solid rgba(255,255,255,0.1);border-radius:14px;max-width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(13,27,62,0.18);animation:slideUp 0.22s ease}
+.modal-box{background:#16172a;border:1px solid rgba(255,255,255,0.1);border-radius:14px;max-width:100%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(13,27,62,0.18);animation:slideUp 0.22s ease}
 .col-head{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-radius:10px 10px 0 0;margin-bottom:0}
 </style>
 </head>
@@ -361,7 +361,7 @@ function PipelineCard({lead,onClick}){
         <div style={{width:30,height:30,borderRadius:'50%',background:avatarColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'#fff',flexShrink:0}}>{initials}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:13,fontWeight:600,color:'#111827',lineHeight:1.35,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{name}</div>
-          {lead.category&&<div style={{fontSize:11,color:'#9ca3af',marginTop:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lead.category.split(',')[0].trim()}</div>}
+          {lead.category&&<div style={{fontSize:11,color:'#9ca3af',marginTop:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{String(lead.category).split(',')[0].trim()}</div>}
         </div>
         {lead.tier&&<span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:20,color:tc.c,background:tc.bg,flexShrink:0,letterSpacing:'0.04em'}}>{lead.tier}</span>}
       </div>
@@ -852,6 +852,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
+
 
 
 
