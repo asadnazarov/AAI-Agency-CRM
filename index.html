@@ -64,6 +64,43 @@ const {useState,useEffect,useMemo,useRef} = React;
 const API = 'https://script.google.com/macros/s/AKfycbyHYkeo-VUKT8hQMvyWAHenOBzZq_h9lmFOuvOfRi7OdXP36EA4l3IiVm6XRLpJ-Ah0/exec';
 
 const SK='aai_k_v11';const SC='aai_c_v11';const SG='aai_goal_v3';
+const SP='aai_plan_v1';const SCONT='aai_cont_v1';
+const CONTENT_ITEMS=[
+  {id:'c1',date:'23.05.2026',n:1,kun:'Шанба',cat:'Expert',topic:'Lead Finder — первый ИИ сотрудник'},
+  {id:'c2',date:'24.05.2026',n:2,kun:'Якшанба',cat:'Serial',topic:'Старт: 0 → 10к$ за 90 дней. Вот мой план'},
+  {id:'c3',date:'25.05.2026',n:3,kun:'Душанба',cat:'Lichniy',topic:'История: турагентство → ушёл 1 дек → Avtotest7 на след. день'},
+  {id:'c4',date:'26.05.2026',n:4,kun:'Сешанба',cat:'Serial',topic:'Lead Finder в работе: скрейпит B2B лиды вживую'},
+  {id:'c5',date:'27.05.2026',n:5,kun:'Чоршанба',cat:'Expert',topic:'[своя тема — инструмент или лайфхак]'},
+  {id:'c6',date:'28.05.2026',n:6,kun:'Пайшанба',cat:'Serial',topic:'Как нахожу клиентов: показываю реальный аутрич'},
+  {id:'c7',date:'29.05.2026',n:7,kun:'Жума',cat:'Sotuv',topic:'Кейс Avtotest7: что автоматизировал, как изменил бизнес'},
+  {id:'c8',date:'30.05.2026',n:8,kun:'Шанба',cat:'Serial',topic:'Честные цифры первой недели'},
+  {id:'c9',date:'31.05.2026',n:9,kun:'Якшанба',cat:'Expert',topic:'[своя тема — лайфхак для бизнеса]'},
+  {id:'c10',date:'01.06.2026',n:10,kun:'Душанба',cat:'Serial',topic:'Создаю второго агента'},
+  {id:'c11',date:'02.06.2026',n:11,kun:'Сешанба',cat:'Lichniy',topic:'Мой день: тренировки, футбол, мечта о клубе'},
+  {id:'c12',date:'03.06.2026',n:12,kun:'Чоршанба',cat:'Serial',topic:'Второй агент в действии — показываю результат'},
+  {id:'c13',date:'04.06.2026',n:13,kun:'Пайшанба',cat:'Expert',topic:'[своя тема — сравнение или подход]'},
+  {id:'c14',date:'05.06.2026',n:14,kun:'Жума',cat:'Serial',topic:'2 недели прошло — что понял, где облажался'},
+  {id:'c15',date:'06.06.2026',n:15,kun:'Шанба',cat:'Sotuv',topic:'Что я делаю для клиентов — разбор оффера'},
+  {id:'c16',date:'07.06.2026',n:16,kun:'Якшанба',cat:'Serial',topic:'Создаю третьего агента — Интегратор'},
+  {id:'c17',date:'08.06.2026',n:17,kun:'Душанба',cat:'Expert',topic:'[своя тема — внутрянка автоматизации]'},
+  {id:'c18',date:'09.06.2026',n:18,kun:'Сешанба',cat:'Serial',topic:'Первый звонок с клиентом — показываю процесс'},
+  {id:'c19',date:'10.06.2026',n:19,kun:'Чоршанба',cat:'Lichniy',topic:'Круг общения и амбиции — про кого я хочу рядом'},
+  {id:'c20',date:'11.06.2026',n:20,kun:'Пайшанба',cat:'Serial',topic:'Третий агент в команде — мини-обзор'},
+  {id:'c21',date:'12.06.2026',n:21,kun:'Жума',cat:'Expert',topic:'[своя тема — лайфхак с конкретным инструментом]'},
+  {id:'c22',date:'13.06.2026',n:22,kun:'Шанба',cat:'Serial',topic:'3 недели: деньги, лиды, проблемы. Честные цифры'},
+  {id:'c23',date:'14.06.2026',n:23,kun:'Якшанба',cat:'Sotuv',topic:'DEMO: как ИИ агент закрывает половину работы менеджера'},
+  {id:'c24',date:'15.06.2026',n:24,kun:'Душанба',cat:'Serial',topic:'Создаю четвёртого агента'},
+  {id:'c25',date:'16.06.2026',n:25,kun:'Сешанба',cat:'Expert',topic:'[своя тема — разбор инструмента]'},
+  {id:'c26',date:'17.06.2026',n:26,kun:'Чоршанба',cat:'Lichniy',topic:'Манифест: почему я не такой как другие ИИ эксперты'},
+  {id:'c27',date:'18.06.2026',n:27,kun:'Пайшанба',cat:'Serial',topic:'Команда работает параллельно — показываю вживую'},
+  {id:'c28',date:'19.06.2026',n:28,kun:'Жума',cat:'Sotuv',topic:'Avtotest7 часть 2 — конкретные цифры результата'},
+  {id:'c29',date:'20.06.2026',n:29,kun:'Шанба',cat:'Expert',topic:'[своя тема]'},
+  {id:'c30',date:'21.06.2026',n:30,kun:'Якшанба',cat:'Serial',topic:'БОЛЬШОЙ ОТЧЁТ 4 недели: все цифры, провалы, победы'},
+  {id:'c31',date:'22.06.2026',n:31,kun:'Душанба',cat:'Expert',topic:'[своя тема]'},
+  {id:'c32',date:'23.06.2026',n:32,kun:'Сешанба',cat:'Lichniy',topic:'Месяц спустя: что изменилось в жизни'},
+];
+const CAT_C={Expert:{c:'#818cf8',bg:'rgba(129,140,248,0.14)'},Serial:{c:'#c084fc',bg:'rgba(192,132,252,0.14)'},Lichniy:{c:'#fb923c',bg:'rgba(251,146,60,0.14)'},Sotuv:{c:'#4ade80',bg:'rgba(74,222,128,0.14)'}};
+const PRIO={high:{c:'#ef4444',label:'Важно'},medium:{c:'#f59e0b',label:'Обычно'},low:{c:'#6b7280',label:'Мелко'}};
 
 const STAGES=[
   {id:'Sent first message',label:'Первое касание',color:'#6366f1'},
@@ -132,6 +169,8 @@ const I={
   link:()=><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 9a3 3 0 004.5.5l2-2A3 3 0 008 3.5L7 4.5"/><path d="M10 7a3 3 0 00-4.5-.5l-2 2A3 3 0 008 12.5l1-1"/></svg>,
   arR:()=><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><line x1="2" y1="8" x2="14" y2="8"/><polyline points="9,3 14,8 9,13"/></svg>,
   import:()=><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2v9"/><polyline points="4,7 8,11 12,7"/><path d="M2 14h12"/></svg>,
+  planner:()=><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="12" height="12" rx="1.5"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="5" y1="10" x2="7" y2="10"/><line x1="5" y1="13" x2="9" y2="13"/></svg>,
+  content:()=><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="14" height="8" rx="1.5"/><polygon points="6.5,6.5 6.5,9.5 10.5,8" fill="currentColor" stroke="none"/></svg>,
 };
 
 function Wave(){
@@ -683,6 +722,230 @@ function RopPanel({leads,onClose,groqKey}){
   );
 }
 
+function todayStr(){const t=new Date(new Date().getTime()+5*3600000);return`${t.getUTCDate().toString().padStart(2,'0')}.${(t.getUTCMonth()+1).toString().padStart(2,'0')}.${t.getUTCFullYear()}`;}
+function tomorrowStr(){const t=new Date(new Date().getTime()+5*3600000+86400000);return`${t.getUTCDate().toString().padStart(2,'0')}.${(t.getUTCMonth()+1).toString().padStart(2,'0')}.${t.getUTCFullYear()}`;}
+function nDaysAgoStr(n){const t=new Date(new Date().getTime()+5*3600000-n*86400000);return`${t.getUTCDate().toString().padStart(2,'0')}.${(t.getUTCMonth()+1).toString().padStart(2,'0')}.${t.getUTCFullYear()}`;}
+
+function ContentPage(){
+  const [done,setDone]=useState(()=>new Set(ls(SCONT)||['c1']));
+  const [filter,setFilter]=useState('all');
+  const [search,setSearch]=useState('');
+  function toggle(id){setDone(prev=>{const next=new Set(prev);next.has(id)?next.delete(id):next.add(id);lss(SCONT,[...next]);return next;});}
+  function itemStatus(item){
+    if(done.has(item.id))return'done';
+    const [d,m,y]=item.date.split('.').map(Number);
+    const itemDate=new Date(y,m-1,d);
+    const now=new Date(new Date().getTime()+5*3600000);
+    const todayDate=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    if(itemDate.getTime()===todayDate.getTime())return'today';
+    if(itemDate<todayDate)return'missed';
+    return'upcoming';
+  }
+  const doneCount=[...done].filter(id=>CONTENT_ITEMS.find(i=>i.id===id)).length;
+  const total=CONTENT_ITEMS.length;
+  const pct=Math.round(doneCount/total*100);
+  const catStats=Object.fromEntries(Object.keys(CAT_C).map(cat=>[cat,{total:CONTENT_ITEMS.filter(i=>i.cat===cat).length,done:CONTENT_ITEMS.filter(i=>i.cat===cat&&done.has(i.id)).length}]));
+  const filtered=CONTENT_ITEMS.filter(it=>{
+    const q=search.toLowerCase();
+    const matchQ=!q||it.topic.toLowerCase().includes(q)||it.cat.toLowerCase().includes(q)||it.kun.toLowerCase().includes(q);
+    const st=itemStatus(it);
+    const matchF=filter==='all'||(filter==='done'&&st==='done')||(filter==='today'&&st==='today')||(filter==='missed'&&st==='missed')||(filter==='upcoming'&&st==='upcoming');
+    return matchQ&&matchF;
+  });
+  return(
+    <div style={{animation:'fadeUp 0.2s ease'}}>
+      <div style={{marginBottom:20}}>
+        <h1 style={{fontSize:18,fontWeight:700,color:'#e8e8f4',marginBottom:4}}>Контент-план</h1>
+        <p style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>90 дней · 0→10к$ · Серия 2026</p>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 80px',gap:10,marginBottom:16}}>
+        <div style={{background:'#12131f',border:'1px solid rgba(255,255,255,0.08)',borderRadius:12,padding:'14px 18px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+            <span style={{fontSize:13,fontWeight:600,color:'#e8e8f4'}}>{doneCount} / {total} выпусков</span>
+            <span style={{fontSize:14,fontWeight:800,color:'#4ade80'}}>{pct}%</span>
+          </div>
+          <div style={{height:6,background:'rgba(255,255,255,0.08)',borderRadius:3,overflow:'hidden',marginBottom:10}}>
+            <div style={{height:'100%',width:`${pct}%`,background:'linear-gradient(90deg,#6366f1,#a855f7,#4ade80)',borderRadius:3,transition:'width 0.5s ease'}}/>
+          </div>
+          <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
+            {Object.entries(catStats).map(([cat,{total:t,done:d}])=>(
+              <div key={cat} style={{display:'flex',alignItems:'center',gap:5}}>
+                <span style={{width:6,height:6,borderRadius:'50%',background:CAT_C[cat].c,display:'inline-block'}}/>
+                <span style={{fontSize:10,color:'rgba(255,255,255,0.35)'}}>{cat} {d}/{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{background:'#12131f',border:'1px solid rgba(255,255,255,0.08)',borderRadius:12,padding:'14px',textAlign:'center',display:'flex',flexDirection:'column',justifyContent:'center'}}>
+          <div style={{fontSize:26,fontWeight:800,color:'#fb923c',lineHeight:1}}>{total-doneCount}</div>
+          <div style={{fontSize:10,color:'rgba(255,255,255,0.3)',marginTop:4}}>впереди</div>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:7,marginBottom:14,flexWrap:'wrap'}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск темы..." style={{flex:1,minWidth:150,padding:'8px 12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.09)',borderRadius:8,color:'#e8e8f4',fontSize:12}}/>
+        {[['all','Все'],['today','Сегодня'],['upcoming','Впереди'],['missed','Пропущено'],['done','Готово']].map(([v,l])=>(
+          <button key={v} onClick={()=>setFilter(v)} style={{padding:'7px 11px',background:filter===v?'#6366f1':'rgba(255,255,255,0.04)',border:`1.5px solid ${filter===v?'transparent':'rgba(255,255,255,0.08)'}`,borderRadius:8,color:filter===v?'#fff':'rgba(255,255,255,0.4)',fontSize:11,fontWeight:600,cursor:'pointer',transition:'all 0.15s'}}>{l}</button>
+        ))}
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:5}}>
+        {filtered.map(item=>{
+          const st=itemStatus(item);const cc=CAT_C[item.cat]||{c:'#9ca3af',bg:'rgba(156,163,175,0.1)'};const isDone=done.has(item.id);
+          return(
+            <div key={item.id} style={{background:st==='today'?'rgba(99,102,241,0.07)':'#12131f',border:`1px solid ${st==='today'?'rgba(99,102,241,0.3)':isDone?'rgba(74,222,128,0.12)':st==='missed'&&!isDone?'rgba(239,68,68,0.1)':'rgba(255,255,255,0.07)'}`,borderRadius:10,padding:'11px 14px',display:'flex',alignItems:'center',gap:12,transition:'all 0.15s',opacity:isDone?0.65:1}}>
+              <div style={{width:34,height:34,borderRadius:8,background:'rgba(255,255,255,0.04)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flexShrink:0,border:'1px solid rgba(255,255,255,0.06)'}}>
+                <div style={{fontSize:9,color:'rgba(255,255,255,0.35)',lineHeight:1}}>{item.date.slice(0,5)}</div>
+                <div style={{fontSize:11,fontWeight:800,color:st==='today'?'#818cf8':isDone?'#4ade80':'rgba(255,255,255,0.5)',lineHeight:1.3}}>#{item.n}</div>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4,flexWrap:'wrap'}}>
+                  <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:20,color:cc.c,background:cc.bg,letterSpacing:'0.05em',textTransform:'uppercase'}}>{item.cat}</span>
+                  <span style={{fontSize:9,color:'rgba(255,255,255,0.2)'}}>{item.kun}</span>
+                  {st==='today'&&<span style={{fontSize:9,fontWeight:700,color:'#818cf8',background:'rgba(129,140,248,0.15)',padding:'2px 7px',borderRadius:20}}>СЕГОДНЯ</span>}
+                  {st==='missed'&&!isDone&&<span style={{fontSize:9,fontWeight:700,color:'#ef4444',background:'rgba(239,68,68,0.1)',padding:'2px 7px',borderRadius:20}}>ПРОПУЩЕНО</span>}
+                </div>
+                <div style={{fontSize:13,fontWeight:isDone?400:500,color:isDone?'rgba(255,255,255,0.3)':'#e8e8f4',textDecoration:isDone?'line-through':'none',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.topic}</div>
+              </div>
+              <button onClick={()=>toggle(item.id)} title={isDone?'Снять отметку':'Отметить готово'} style={{width:32,height:32,borderRadius:9,border:`1.5px solid ${isDone?'rgba(74,222,128,0.5)':'rgba(255,255,255,0.12)'}`,background:isDone?'rgba(74,222,128,0.12)':'transparent',color:isDone?'#4ade80':'rgba(255,255,255,0.25)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,transition:'all 0.15s',fontSize:15}}>
+                {isDone?<I.check/>:'○'}
+              </button>
+            </div>
+          );
+        })}
+        {filtered.length===0&&<div style={{textAlign:'center',padding:'3rem',color:'rgba(255,255,255,0.2)',fontSize:13,background:'rgba(255,255,255,0.02)',borderRadius:12,border:'1px dashed rgba(255,255,255,0.07)'}}>Ничего не найдено</div>}
+      </div>
+    </div>
+  );
+}
+
+function PlannerPage(){
+  const [tasks,setTasks]=useState(()=>ls(SP)||[]);
+  const [selDate,setSelDate]=useState(()=>todayStr());
+  const [newText,setNewText]=useState('');
+  const [newPrio,setNewPrio]=useState('medium');
+  const [newNote,setNewNote]=useState('');
+  const [showForm,setShowForm]=useState(false);
+  function save(next){setTasks(next);lss(SP,next);}
+  function addTask(){if(!newText.trim())return;save([...tasks,{id:uid(),text:newText.trim(),date:selDate,priority:newPrio,completed:false,completedAt:null,comment:newNote.trim(),createdAt:tashNow()}]);setNewText('');setNewNote('');setNewPrio('medium');setShowForm(false);}
+  function toggle(id){const now=tashNow();save(tasks.map(t=>t.id===id?{...t,completed:!t.completed,completedAt:!t.completed?now:null}:t));}
+  function del(id){save(tasks.filter(t=>t.id!==id));}
+  const today=todayStr();const tomorrow=tomorrowStr();
+  const days=useMemo(()=>{const arr=[];for(let i=-3;i<=3;i++){const t=new Date(new Date().getTime()+5*3600000+i*86400000);const d=`${t.getUTCDate().toString().padStart(2,'0')}.${(t.getUTCMonth()+1).toString().padStart(2,'0')}.${t.getUTCFullYear()}`;const names=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];arr.push({date:d,name:names[t.getUTCDay()],num:t.getUTCDate()});}return arr;},[]);
+  const weekData=useMemo(()=>days.map(d=>({...d,total:tasks.filter(t=>t.date===d.date).length,done:tasks.filter(t=>t.date===d.date&&t.completed).length})),[tasks,days]);
+  const streak=useMemo(()=>{let s=0;for(let i=0;i<60;i++){if(tasks.filter(t=>t.date===nDaysAgoStr(i)&&t.completed).length>0)s++;else if(i>0)break;}return s;},[tasks]);
+  const selTasks=tasks.filter(t=>t.date===selDate);
+  const selDone=selTasks.filter(t=>t.completed).length;
+  const weekTotal=weekData.reduce((a,d)=>a+d.total,0);
+  const weekDone=weekData.reduce((a,d)=>a+d.done,0);
+  const maxBar=Math.max(...weekData.map(d=>d.total),1);
+  return(
+    <div style={{animation:'fadeUp 0.2s ease'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+        <div>
+          <h1 style={{fontSize:18,fontWeight:700,color:'#e8e8f4',marginBottom:4}}>Планер</h1>
+          <p style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>Ташкент · {today}</p>
+        </div>
+        <div style={{display:'flex',gap:10}}>
+          <div style={{background:'#12131f',border:'1px solid rgba(251,146,60,0.2)',borderRadius:10,padding:'8px 14px',textAlign:'center',minWidth:72}}>
+            <div style={{fontSize:17,fontWeight:800,color:'#fb923c',lineHeight:1}}>🔥 {streak}</div>
+            <div style={{fontSize:9,color:'rgba(255,255,255,0.3)',marginTop:3,letterSpacing:'0.05em'}}>СТРИК</div>
+          </div>
+          <div style={{background:'#12131f',border:'1px solid rgba(74,222,128,0.2)',borderRadius:10,padding:'8px 14px',textAlign:'center',minWidth:72}}>
+            <div style={{fontSize:17,fontWeight:800,color:'#4ade80',lineHeight:1}}>{weekTotal?Math.round(weekDone/weekTotal*100):0}%</div>
+            <div style={{fontSize:9,color:'rgba(255,255,255,0.3)',marginTop:3,letterSpacing:'0.05em'}}>НЕДЕЛЯ</div>
+          </div>
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:5,marginBottom:20}}>
+        {weekData.map(d=>{
+          const isSel=d.date===selDate;const isToday=d.date===today;const isTomorrow=d.date===tomorrow;const pct=d.total?d.done/d.total:0;
+          return(
+            <button key={d.date} onClick={()=>setSelDate(d.date)} style={{padding:'8px 4px',background:isSel?'rgba(99,102,241,0.18)':'rgba(255,255,255,0.03)',border:`1.5px solid ${isSel?'rgba(99,102,241,0.5)':isToday?'rgba(129,140,248,0.2)':'rgba(255,255,255,0.07)'}`,borderRadius:10,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:4,transition:'all 0.15s'}}>
+              <div style={{fontSize:9,color:isSel?'#a5b4fc':isToday?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.25)',fontWeight:isToday?700:400,letterSpacing:'0.04em'}}>{d.name}</div>
+              <div style={{fontSize:16,fontWeight:700,color:isSel?'#fff':isToday?'#e8e8f4':'rgba(255,255,255,0.4)',lineHeight:1}}>{d.num}</div>
+              {d.total>0?<div style={{width:20,height:3,background:'rgba(255,255,255,0.08)',borderRadius:2,overflow:'hidden'}}><div style={{height:'100%',width:`${pct*100}%`,background:pct>=1?'#4ade80':'#818cf8',transition:'width 0.3s'}}/></div>:(isToday||isTomorrow?<div style={{width:5,height:5,borderRadius:'50%',background:'rgba(129,140,248,0.35)'}}/>:<div style={{width:4,height:4,borderRadius:'50%',background:'rgba(255,255,255,0.06)'}}/>)}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+        <div>
+          <span style={{fontSize:14,fontWeight:600,color:'#e8e8f4'}}>{selDate===today?'Сегодня':selDate===tomorrow?'Завтра':selDate}</span>
+          {selTasks.length>0&&<span style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginLeft:8,fontFamily:'JetBrains Mono,monospace'}}>{selDone}/{selTasks.length}</span>}
+          {selDone===selTasks.length&&selTasks.length>0&&<span style={{fontSize:11,color:'#4ade80',marginLeft:8}}>✅ Всё!</span>}
+        </div>
+        <button onClick={()=>setShowForm(!showForm)} style={{padding:'6px 12px',background:showForm?'rgba(239,68,68,0.12)':'rgba(99,102,241,0.18)',border:`1px solid ${showForm?'rgba(239,68,68,0.3)':'rgba(99,102,241,0.35)'}`,borderRadius:8,color:showForm?'#ef4444':'#a5b4fc',fontSize:12,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:5,transition:'all 0.15s'}}>
+          {showForm?<><I.close/>Отмена</>:<><I.plus/>Задача</>}
+        </button>
+      </div>
+      {showForm&&(
+        <div style={{background:'#12131f',border:'1.5px solid rgba(99,102,241,0.2)',borderRadius:12,padding:'14px',marginBottom:12,animation:'fadeUp 0.15s ease'}}>
+          <input value={newText} onChange={e=>setNewText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addTask()} placeholder="Что нужно сделать?" className="inp" style={{marginBottom:8}} autoFocus/>
+          <div style={{display:'flex',gap:6,marginBottom:8}}>
+            {Object.entries(PRIO).map(([k,v])=>(
+              <button key={k} onClick={()=>setNewPrio(k)} style={{flex:1,padding:'6px',border:`1.5px solid ${newPrio===k?v.c:'rgba(255,255,255,0.08)'}`,borderRadius:7,background:newPrio===k?`${v.c}22`:'transparent',color:newPrio===k?v.c:'rgba(255,255,255,0.3)',fontSize:11,fontWeight:600,cursor:'pointer',transition:'all 0.15s',display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>
+                <span style={{width:6,height:6,borderRadius:'50%',background:v.c,display:'inline-block'}}/>{v.label}
+              </button>
+            ))}
+          </div>
+          <textarea value={newNote} onChange={e=>setNewNote(e.target.value)} placeholder="Заметка или напоминание..." className="inp" style={{minHeight:50,resize:'vertical',fontSize:12,marginBottom:8}}/>
+          <button onClick={addTask} disabled={!newText.trim()} className="btn btn-navy" style={{width:'100%',justifyContent:'center',fontSize:12,padding:'8px'}}><I.plus/>Добавить</button>
+        </div>
+      )}
+      <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:24}}>
+        {selTasks.length===0&&(
+          <div style={{textAlign:'center',padding:'2.5rem',color:'rgba(255,255,255,0.18)',fontSize:13,background:'rgba(255,255,255,0.02)',borderRadius:12,border:'1px dashed rgba(255,255,255,0.06)'}}>
+            {selDate===tomorrow?<>📋 Запланируй завтра<br/><span style={{fontSize:11,display:'block',marginTop:4,opacity:0.7}}>Нажми «+ Задача» выше</span></>:<>Задач нет — нажми «+ Задача»</>}
+          </div>
+        )}
+        {[...selTasks].sort((a,b)=>({high:0,medium:1,low:2}[a.priority]||1)-({high:0,medium:1,low:2}[b.priority]||1)).map(task=>{
+          const pc=PRIO[task.priority]||PRIO.medium;
+          return(
+            <div key={task.id} style={{background:task.completed?'rgba(74,222,128,0.04)':'#12131f',border:`1px solid ${task.completed?'rgba(74,222,128,0.1)':'rgba(255,255,255,0.07)'}`,borderRadius:10,padding:'10px 14px',display:'flex',alignItems:'flex-start',gap:10,animation:'cardIn 0.2s ease',transition:'all 0.2s'}}>
+              <button onClick={()=>toggle(task.id)} style={{width:20,height:20,borderRadius:5,border:`2px solid ${task.completed?'#4ade80':pc.c+'88'}`,background:task.completed?'#4ade80':'transparent',flexShrink:0,marginTop:2,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all 0.15s',color:'#000',minWidth:20}}>
+                {task.completed&&<I.check/>}
+              </button>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:task.completed?400:500,color:task.completed?'rgba(255,255,255,0.3)':'#e8e8f4',textDecoration:task.completed?'line-through':'none',lineHeight:1.45}}>{task.text}</div>
+                {task.comment&&<div style={{fontSize:11,color:'rgba(255,255,255,0.28)',marginTop:4,lineHeight:1.5}}>💬 {task.comment}</div>}
+                {task.completed&&task.completedAt&&<div style={{fontSize:9,color:'#4ade80',marginTop:3,fontFamily:'JetBrains Mono,monospace'}}>✅ {task.completedAt}</div>}
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:4,flexShrink:0}}>
+                <span style={{width:5,height:5,borderRadius:'50%',background:pc.c,display:'block'}}/>
+                <button onClick={()=>del(task.id)} style={{width:22,height:22,borderRadius:5,border:'none',background:'transparent',color:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'color 0.15s'}} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.15)'}><I.trash/></button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {weekTotal>0&&(
+        <div style={{background:'#12131f',border:'1px solid rgba(255,255,255,0.07)',borderRadius:12,padding:'16px 18px'}}>
+          <div style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.35)',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:12}}>Аналитика недели</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
+            <div style={{background:'rgba(255,255,255,0.03)',borderRadius:8,padding:'10px',textAlign:'center'}}><div style={{fontSize:20,fontWeight:800,color:'#818cf8'}}>{weekTotal}</div><div style={{fontSize:9,color:'rgba(255,255,255,0.3)',marginTop:2,letterSpacing:'0.04em'}}>ЗАДАЧ</div></div>
+            <div style={{background:'rgba(255,255,255,0.03)',borderRadius:8,padding:'10px',textAlign:'center'}}><div style={{fontSize:20,fontWeight:800,color:'#4ade80'}}>{weekDone}</div><div style={{fontSize:9,color:'rgba(255,255,255,0.3)',marginTop:2,letterSpacing:'0.04em'}}>ГОТОВО</div></div>
+            <div style={{background:'rgba(255,255,255,0.03)',borderRadius:8,padding:'10px',textAlign:'center'}}><div style={{fontSize:20,fontWeight:800,color:'#fb923c'}}>{Math.round(weekDone/weekTotal*100)}%</div><div style={{fontSize:9,color:'rgba(255,255,255,0.3)',marginTop:2,letterSpacing:'0.04em'}}>ЭФФЕКТ</div></div>
+          </div>
+          <div style={{display:'flex',gap:4,alignItems:'flex-end',height:56}}>
+            {weekData.map(d=>{
+              const isToday=d.date===today;const isSel=d.date===selDate;
+              return(
+                <div key={d.date} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,cursor:'pointer'}} onClick={()=>setSelDate(d.date)}>
+                  <div style={{width:'100%',height:44,display:'flex',alignItems:'flex-end'}}>
+                    <div style={{width:'100%',height:d.total?`${Math.max(d.total/maxBar*100,8)}%`:'8%',background:isSel?'rgba(129,140,248,0.15)':'rgba(255,255,255,0.05)',borderRadius:'3px 3px 0 0',position:'relative',overflow:'hidden',transition:'all 0.3s'}}>
+                      <div style={{position:'absolute',bottom:0,left:0,right:0,height:d.total&&d.done?`${d.done/d.total*100}%`:'0%',background:d.done===d.total&&d.total>0?'#4ade80':isToday?'#818cf8':'#6366f1',transition:'height 0.4s ease'}}/>
+                    </div>
+                  </div>
+                  <div style={{fontSize:9,color:isSel?'#a5b4fc':isToday?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.2)',fontWeight:isSel||isToday?700:400}}>{d.name}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App(){
   const [leads,setLeads]=useState(()=>ls(SK)||[]);
   const [page,setPage]=useState('kanban');
@@ -788,6 +1051,8 @@ function App(){
     {id:'pipeline',icon:<I.pipe/>,label:'Pipeline'},
     {id:'analytics',icon:<I.chart/>,label:'Аналитика'},
     {id:'goal',icon:<I.goal/>,label:'Цель'},
+    {id:'planner',icon:<I.planner/>,label:'Планер'},
+    {id:'content',icon:<I.content/>,label:'Контент'},
   ];
 
   return(
@@ -837,6 +1102,8 @@ function App(){
           {page==='pipeline'&&<PipelinePage onSendToKanban={sendToKanban}/>}
           {page==='analytics'&&<AnalyticsPage leads={leads} groqKey={groqKey}/>}
           {page==='goal'&&<GoalPage/>}
+          {page==='planner'&&<PlannerPage/>}
+          {page==='content'&&<ContentPage/>}
         </div>
         <Wave/>
       </main>
