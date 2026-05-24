@@ -727,16 +727,31 @@ function tomorrowStr(){const t=new Date(new Date().getTime()+5*3600000+86400000)
 function nDaysAgoStr(n){const t=new Date(new Date().getTime()+5*3600000-n*86400000);return`${t.getUTCDate().toString().padStart(2,'0')}.${(t.getUTCMonth()+1).toString().padStart(2,'0')}.${t.getUTCFullYear()}`;}
 
 function ContentPage(){
-  const [done,setDone]=useState(()=>new Set(ls(SCONT)||['c1']));
+  const [done,setDone]=useState(()=>new Set(ls(SCONT)||[]));
+  const [items,setItems]=useState(CONTENT_ITEMS);
   const [filter,setFilter]=useState('all');
   const [search,setSearch]=useState('');
+  const [syncing,setSyncing]=useState(false);
+  useEffect(()=>{
+    setSyncing(true);
+    fetch(`${API}?action=getContentPlan`)
+      .then(r=>r.json())
+      .then(data=>{
+        if(Array.isArray(data)&&data.length>0){
+          const mapped=data.map(i=>({id:'c'+i.n,n:i.n,date:String(i.date||''),kun:String(i.kun||''),cat:String(i.cat||''),topic:String(i.topic||'')})).filter(i=>i.topic);
+          if(mapped.length>0)setItems(mapped);
+          const doneIds=new Set(data.filter(i=>i.done).map(i=>'c'+i.n));
+          if(doneIds.size>0){setDone(prev=>{const next=new Set([...prev,...doneIds]);lss(SCONT,[...next]);return next;});}
+        }
+      }).catch(()=>{}).finally(()=>setSyncing(false));
+  },[]);
   function toggle(id){
     setDone(prev=>{
       const next=new Set(prev);
       const wasDone=next.has(id);
       wasDone?next.delete(id):next.add(id);
       lss(SCONT,[...next]);
-      const item=CONTENT_ITEMS.find(i=>i.id===id);
+      const item=items.find(i=>i.id===id);
       if(item)apiPost({action:'updateContentStatus',n:item.n,done:!wasDone}).catch(()=>{});
       return next;
     });
@@ -751,11 +766,11 @@ function ContentPage(){
     if(itemDate<todayDate)return'missed';
     return'upcoming';
   }
-  const doneCount=[...done].filter(id=>CONTENT_ITEMS.find(i=>i.id===id)).length;
-  const total=CONTENT_ITEMS.length;
-  const pct=Math.round(doneCount/total*100);
-  const catStats=Object.fromEntries(Object.keys(CAT_C).map(cat=>[cat,{total:CONTENT_ITEMS.filter(i=>i.cat===cat).length,done:CONTENT_ITEMS.filter(i=>i.cat===cat&&done.has(i.id)).length}]));
-  const filtered=CONTENT_ITEMS.filter(it=>{
+  const doneCount=[...done].filter(id=>items.find(i=>i.id===id)).length;
+  const total=items.length;
+  const pct=total?Math.round(doneCount/total*100):0;
+  const catStats=Object.fromEntries(Object.keys(CAT_C).map(cat=>[cat,{total:items.filter(i=>i.cat===cat).length,done:items.filter(i=>i.cat===cat&&done.has(i.id)).length}]));
+  const filtered=items.filter(it=>{
     const q=search.toLowerCase();
     const matchQ=!q||it.topic.toLowerCase().includes(q)||it.cat.toLowerCase().includes(q)||it.kun.toLowerCase().includes(q);
     const st=itemStatus(it);
@@ -765,7 +780,7 @@ function ContentPage(){
   return(
     <div style={{animation:'fadeUp 0.2s ease'}}>
       <div style={{marginBottom:20}}>
-        <h1 style={{fontSize:18,fontWeight:700,color:'#e8e8f4',marginBottom:4}}>Контент-план</h1>
+        <h1 style={{fontSize:18,fontWeight:700,color:'#e8e8f4',marginBottom:4}}>Контент-план{syncing&&<span style={{fontSize:11,color:'rgba(255,255,255,0.3)',marginLeft:10,fontWeight:400}}>⟳ синхронизация...</span>}</h1>
         <p style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>90 дней · 0→10к$ · Серия 2026</p>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 80px',gap:10,marginBottom:16}}>
