@@ -730,7 +730,17 @@ function ContentPage(){
   const [done,setDone]=useState(()=>new Set(ls(SCONT)||['c1']));
   const [filter,setFilter]=useState('all');
   const [search,setSearch]=useState('');
-  function toggle(id){setDone(prev=>{const next=new Set(prev);next.has(id)?next.delete(id):next.add(id);lss(SCONT,[...next]);return next;});}
+  function toggle(id){
+    setDone(prev=>{
+      const next=new Set(prev);
+      const wasDone=next.has(id);
+      wasDone?next.delete(id):next.add(id);
+      lss(SCONT,[...next]);
+      const item=CONTENT_ITEMS.find(i=>i.id===id);
+      if(item)apiPost({action:'updateContentStatus',n:item.n,done:!wasDone}).catch(()=>{});
+      return next;
+    });
+  }
   function itemStatus(item){
     if(done.has(item.id))return'done';
     const [d,m,y]=item.date.split('.').map(Number);
