@@ -149,7 +149,7 @@ async function apiGet(sheet){
   return(await fetch(`${API}?sheet=${encodeURIComponent(sheet)}`)).json();
 }
 async function apiPost(body){
-  await fetch(API,{method:'POST',body:JSON.stringify(body)});
+  await fetch(API,{method:'POST',body:JSON.stringify(body),headers:{'Content-Type':'text/plain'}});
 }
 
 const I={
@@ -801,21 +801,21 @@ function ContentPage(){
         {filtered.map(item=>{
           const st=itemStatus(item);const cc=CAT_C[item.cat]||{c:'#9ca3af',bg:'rgba(156,163,175,0.1)'};const isDone=done.has(item.id);
           return(
-            <div key={item.id} style={{background:st==='today'?'rgba(99,102,241,0.07)':'#12131f',border:`1px solid ${st==='today'?'rgba(99,102,241,0.3)':isDone?'rgba(74,222,128,0.12)':st==='missed'&&!isDone?'rgba(239,68,68,0.1)':'rgba(255,255,255,0.07)'}`,borderRadius:10,padding:'11px 14px',display:'flex',alignItems:'center',gap:12,transition:'all 0.15s',opacity:isDone?0.65:1}}>
-              <div style={{width:34,height:34,borderRadius:8,background:'rgba(255,255,255,0.04)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flexShrink:0,border:'1px solid rgba(255,255,255,0.06)'}}>
-                <div style={{fontSize:9,color:'rgba(255,255,255,0.35)',lineHeight:1}}>{item.date.slice(0,5)}</div>
-                <div style={{fontSize:11,fontWeight:800,color:st==='today'?'#818cf8':isDone?'#4ade80':'rgba(255,255,255,0.5)',lineHeight:1.3}}>#{item.n}</div>
+            <div key={item.id} style={{background:st==='today'?'#eef2ff':'#ffffff',border:`1px solid ${st==='today'?'rgba(99,102,241,0.25)':isDone?'rgba(74,222,128,0.35)':st==='missed'&&!isDone?'rgba(239,68,68,0.2)':'rgba(0,0,0,0.07)'}`,borderRadius:10,padding:'11px 14px',display:'flex',alignItems:'center',gap:12,transition:'all 0.15s',opacity:isDone?0.7:1,boxShadow:'0 1px 3px rgba(0,0,0,0.07)'}}>
+              <div style={{width:34,height:34,borderRadius:8,background:'rgba(0,0,0,0.04)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flexShrink:0,border:'1px solid rgba(0,0,0,0.08)'}}>
+                <div style={{fontSize:9,color:'rgba(0,0,0,0.4)',lineHeight:1}}>{item.date.slice(0,5)}</div>
+                <div style={{fontSize:11,fontWeight:800,color:st==='today'?'#6366f1':isDone?'#16a34a':'rgba(0,0,0,0.5)',lineHeight:1.3}}>#{item.n}</div>
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4,flexWrap:'wrap'}}>
                   <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:20,color:cc.c,background:cc.bg,letterSpacing:'0.05em',textTransform:'uppercase'}}>{item.cat}</span>
-                  <span style={{fontSize:9,color:'rgba(255,255,255,0.2)'}}>{item.kun}</span>
-                  {st==='today'&&<span style={{fontSize:9,fontWeight:700,color:'#818cf8',background:'rgba(129,140,248,0.15)',padding:'2px 7px',borderRadius:20}}>СЕГОДНЯ</span>}
+                  <span style={{fontSize:9,color:'rgba(0,0,0,0.35)'}}>{item.kun}</span>
+                  {st==='today'&&<span style={{fontSize:9,fontWeight:700,color:'#6366f1',background:'rgba(99,102,241,0.1)',padding:'2px 7px',borderRadius:20}}>СЕГОДНЯ</span>}
                   {st==='missed'&&!isDone&&<span style={{fontSize:9,fontWeight:700,color:'#ef4444',background:'rgba(239,68,68,0.1)',padding:'2px 7px',borderRadius:20}}>ПРОПУЩЕНО</span>}
                 </div>
-                <div style={{fontSize:13,fontWeight:isDone?400:500,color:isDone?'rgba(255,255,255,0.3)':'#e8e8f4',textDecoration:isDone?'line-through':'none',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.topic}</div>
+                <div style={{fontSize:13,fontWeight:isDone?400:500,color:isDone?'rgba(0,0,0,0.3)':'#1a1b2e',textDecoration:isDone?'line-through':'none',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.topic}</div>
               </div>
-              <button onClick={()=>toggle(item.id)} title={isDone?'Снять отметку':'Отметить готово'} style={{width:32,height:32,borderRadius:9,border:`1.5px solid ${isDone?'rgba(74,222,128,0.5)':'rgba(255,255,255,0.12)'}`,background:isDone?'rgba(74,222,128,0.12)':'transparent',color:isDone?'#4ade80':'rgba(255,255,255,0.25)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,transition:'all 0.15s',fontSize:15}}>
+              <button onClick={()=>toggle(item.id)} title={isDone?'Снять отметку':'Отметить готово'} style={{width:32,height:32,borderRadius:9,border:`1.5px solid ${isDone?'rgba(74,222,128,0.6)':'rgba(0,0,0,0.15)'}`,background:isDone?'rgba(74,222,128,0.1)':'transparent',color:isDone?'#16a34a':'rgba(0,0,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,transition:'all 0.15s',fontSize:15}}>
                 {isDone?<I.check/>:'○'}
               </button>
             </div>
@@ -949,16 +949,16 @@ function PlannerPage(){
         </button>
       </div>
       {showForm&&(
-        <div style={{background:'#12131f',border:'1.5px solid rgba(99,102,241,0.2)',borderRadius:12,padding:'14px',marginBottom:12,animation:'fadeUp 0.15s ease'}}>
-          <input value={newText} onChange={e=>setNewText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addTask()} placeholder="Что нужно сделать?" className="inp" style={{marginBottom:8}} autoFocus/>
+        <div style={{background:'#ffffff',border:'1.5px solid rgba(99,102,241,0.25)',borderRadius:12,padding:'14px',marginBottom:12,animation:'fadeUp 0.15s ease',boxShadow:'0 2px 12px rgba(99,102,241,0.1)'}}>
+          <input value={newText} onChange={e=>setNewText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addTask()} placeholder="Что нужно сделать?" style={{width:'100%',padding:'10px 13px',background:'rgba(0,0,0,0.04)',border:'1px solid rgba(0,0,0,0.1)',borderRadius:8,color:'#1a1b2e',fontSize:13,marginBottom:8,outline:'none',fontFamily:'Inter,sans-serif'}} autoFocus/>
           <div style={{display:'flex',gap:6,marginBottom:8}}>
             {Object.entries(PRIO).map(([k,v])=>(
-              <button key={k} onClick={()=>setNewPrio(k)} style={{flex:1,padding:'6px',border:`1.5px solid ${newPrio===k?v.c:'rgba(255,255,255,0.08)'}`,borderRadius:7,background:newPrio===k?`${v.c}22`:'transparent',color:newPrio===k?v.c:'rgba(255,255,255,0.3)',fontSize:11,fontWeight:600,cursor:'pointer',transition:'all 0.15s',display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>
+              <button key={k} onClick={()=>setNewPrio(k)} style={{flex:1,padding:'6px',border:`1.5px solid ${newPrio===k?v.c:'rgba(0,0,0,0.1)'}`,borderRadius:7,background:newPrio===k?`${v.c}18`:'transparent',color:newPrio===k?v.c:'rgba(0,0,0,0.4)',fontSize:11,fontWeight:600,cursor:'pointer',transition:'all 0.15s',display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>
                 <span style={{width:6,height:6,borderRadius:'50%',background:v.c,display:'inline-block'}}/>{v.label}
               </button>
             ))}
           </div>
-          <textarea value={newNote} onChange={e=>setNewNote(e.target.value)} placeholder="Заметка или напоминание..." className="inp" style={{minHeight:50,resize:'vertical',fontSize:12,marginBottom:8}}/>
+          <textarea value={newNote} onChange={e=>setNewNote(e.target.value)} placeholder="Заметка или напоминание..." style={{width:'100%',padding:'10px 13px',background:'rgba(0,0,0,0.04)',border:'1px solid rgba(0,0,0,0.1)',borderRadius:8,color:'#1a1b2e',fontSize:12,marginBottom:8,minHeight:50,resize:'vertical',outline:'none',fontFamily:'Inter,sans-serif'}}/>
           <button onClick={addTask} disabled={!newText.trim()} className="btn btn-navy" style={{width:'100%',justifyContent:'center',fontSize:12,padding:'8px'}}><I.plus/>Добавить</button>
         </div>
       )}
@@ -971,18 +971,18 @@ function PlannerPage(){
         {[...selTasks].sort((a,b)=>({high:0,medium:1,low:2}[a.priority]||1)-({high:0,medium:1,low:2}[b.priority]||1)).map(task=>{
           const pc=PRIO[task.priority]||PRIO.medium;
           return(
-            <div key={task.id} style={{background:task.completed?'rgba(74,222,128,0.04)':'#12131f',border:`1px solid ${task.completed?'rgba(74,222,128,0.1)':'rgba(255,255,255,0.07)'}`,borderRadius:10,padding:'10px 14px',display:'flex',alignItems:'flex-start',gap:10,animation:'cardIn 0.2s ease',transition:'all 0.2s'}}>
-              <button onClick={()=>toggle(task.id)} style={{width:20,height:20,borderRadius:5,border:`2px solid ${task.completed?'#4ade80':pc.c+'88'}`,background:task.completed?'#4ade80':'transparent',flexShrink:0,marginTop:2,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all 0.15s',color:'#000',minWidth:20}}>
+            <div key={task.id} style={{background:task.completed?'#f0fdf4':'#ffffff',border:`1px solid ${task.completed?'rgba(74,222,128,0.35)':'rgba(0,0,0,0.07)'}`,borderRadius:10,padding:'10px 14px',display:'flex',alignItems:'flex-start',gap:10,animation:'cardIn 0.2s ease',transition:'all 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.07)'}}>
+              <button onClick={()=>toggle(task.id)} style={{width:20,height:20,borderRadius:5,border:`2px solid ${task.completed?'#22c55e':pc.c+'88'}`,background:task.completed?'#22c55e':'transparent',flexShrink:0,marginTop:2,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all 0.15s',color:'#fff',minWidth:20}}>
                 {task.completed&&<I.check/>}
               </button>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:task.completed?400:500,color:task.completed?'rgba(255,255,255,0.3)':'#e8e8f4',textDecoration:task.completed?'line-through':'none',lineHeight:1.45}}>{task.text}</div>
-                {task.comment&&<div style={{fontSize:11,color:'rgba(255,255,255,0.28)',marginTop:4,lineHeight:1.5}}>💬 {task.comment}</div>}
-                {task.completed&&task.completedAt&&<div style={{fontSize:9,color:'#4ade80',marginTop:3,fontFamily:'JetBrains Mono,monospace'}}>✅ {task.completedAt}</div>}
+                <div style={{fontSize:13,fontWeight:task.completed?400:500,color:task.completed?'rgba(0,0,0,0.3)':'#1a1b2e',textDecoration:task.completed?'line-through':'none',lineHeight:1.45}}>{task.text}</div>
+                {task.comment&&<div style={{fontSize:11,color:'rgba(0,0,0,0.4)',marginTop:4,lineHeight:1.5}}>💬 {task.comment}</div>}
+                {task.completed&&task.completedAt&&<div style={{fontSize:9,color:'#16a34a',marginTop:3,fontFamily:'JetBrains Mono,monospace'}}>✅ {task.completedAt}</div>}
               </div>
               <div style={{display:'flex',alignItems:'center',gap:4,flexShrink:0}}>
                 <span style={{width:5,height:5,borderRadius:'50%',background:pc.c,display:'block'}}/>
-                <button onClick={()=>del(task.id)} style={{width:22,height:22,borderRadius:5,border:'none',background:'transparent',color:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'color 0.15s'}} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.15)'}><I.trash/></button>
+                <button onClick={()=>del(task.id)} style={{width:22,height:22,borderRadius:5,border:'none',background:'transparent',color:'rgba(0,0,0,0.2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'color 0.15s'}} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='rgba(0,0,0,0.2)'}><I.trash/></button>
               </div>
             </div>
           );
