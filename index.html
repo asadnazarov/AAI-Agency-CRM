@@ -824,10 +824,66 @@ function PlannerPage(){
   const [newPrio,setNewPrio]=useState('medium');
   const [newNote,setNewNote]=useState('');
   const [showForm,setShowForm]=useState(false);
+  const [syncing,setSyncing]=useState(false);
+  const [syncMsg,setSyncMsg]=useState('');
+
   function save(next){setTasks(next);lss(SP,next);}
-  function addTask(){if(!newText.trim())return;save([...tasks,{id:uid(),text:newText.trim(),date:selDate,priority:newPrio,completed:false,completedAt:null,comment:newNote.trim(),createdAt:tashNow()}]);setNewText('');setNewNote('');setNewPrio('medium');setShowForm(false);}
-  function toggle(id){const now=tashNow();save(tasks.map(t=>t.id===id?{...t,completed:!t.completed,completedAt:!t.completed?now:null}:t));}
-  function del(id){save(tasks.filter(t=>t.id!==id));}
+
+  useEffect(()=>{
+    fetch(`${API}?action=getPlanner`)
+      .then(r=>r.json())
+      .then(data=>{
+        if(Array.isArray(data)&&data.length>0){
+          const local=ls(SP)||[];
+          const localIds=new Set(local.map(t=>t.id));
+          const remote=data.filter(t=>!localIds.has(t.id));
+          const merged=[...local,...remote];
+          save(merged);
+        }
+      }).catch(()=>{});
+  },[]);
+
+  async function syncToSheets(){
+    setSyncing(true);setSyncMsg('Синхронизирую...');
+    try{
+      const remote=await fetch(`${API}?action=getPlanner`).then(r=>r.json());
+      const remoteIds=new Set(Array.isArray(remote)?remote.map(t=>t.id):[]);
+      const local=ls(SP)||[];
+      let added=0;
+      for(const t of local){
+        if(!remoteIds.has(t.id)){
+          await apiPost({action:'addPlanner',id:t.id,date:t.date,text:t.text,comment:t.comment||'',createdAt:t.createdAt||''});
+          added++;
+        }
+      }
+      for(const t of local){
+        if(remoteIds.has(t.id)){
+          await apiPost({action:'updatePlanner',id:t.id,completed:t.completed,completedAt:t.completedAt||''});
+        }
+      }
+      setSyncMsg(`✅ Синхронизировано (+${added})`);
+    }catch(e){setSyncMsg('Ошибка синхронизации');}
+    setSyncing(false);setTimeout(()=>setSyncMsg(''),3000);
+  }
+
+  function addTask(){
+    if(!newText.trim())return;
+    const task={id:uid(),text:newText.trim(),date:selDate,priority:newPrio,completed:false,completedAt:null,comment:newNote.trim(),createdAt:tashNow()};
+    save([...tasks,task]);
+    setNewText('');setNewNote('');setNewPrio('medium');setShowForm(false);
+    apiPost({action:'addPlanner',id:task.id,date:task.date,text:task.text,comment:task.comment,createdAt:task.createdAt}).catch(()=>{});
+  }
+  function toggle(id){
+    const now=tashNow();
+    const next=tasks.map(t=>t.id===id?{...t,completed:!t.completed,completedAt:!t.completed?now:null}:t);
+    save(next);
+    const t=next.find(x=>x.id===id);
+    apiPost({action:'updatePlanner',id,completed:t.completed,completedAt:t.completedAt||''}).catch(()=>{});
+  }
+  function del(id){
+    save(tasks.filter(t=>t.id!==id));
+    apiPost({action:'deletePlanner',id}).catch(()=>{});
+  }
   const today=todayStr();const tomorrow=tomorrowStr();
   const days=useMemo(()=>{const arr=[];for(let i=-3;i<=3;i++){const t=new Date(new Date().getTime()+5*3600000+i*86400000);const d=`${t.getUTCDate().toString().padStart(2,'0')}.${(t.getUTCMonth()+1).toString().padStart(2,'0')}.${t.getUTCFullYear()}`;const names=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];arr.push({date:d,name:names[t.getUTCDay()],num:t.getUTCDate()});}return arr;},[]);
   const weekData=useMemo(()=>days.map(d=>({...d,total:tasks.filter(t=>t.date===d.date).length,done:tasks.filter(t=>t.date===d.date&&t.completed).length})),[tasks,days]);
@@ -842,9 +898,13 @@ function PlannerPage(){
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
         <div>
           <h1 style={{fontSize:18,fontWeight:700,color:'#e8e8f4',marginBottom:4}}>Планер</h1>
-          <p style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>Ташкент · {today}</p>
+          <p style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>Ташкент · {today}{syncMsg&&<span style={{marginLeft:8,color:syncMsg.startsWith('✅')?'#4ade80':'#fb923c'}}>{syncMsg}</span>}</p>
         </div>
-        <div style={{display:'flex',gap:10}}>
+        <div style={{display:'flex',gap:10,alignItems:'flex-start'}}>
+          <button onClick={syncToSheets} disabled={syncing} title="Синхронизировать с Google Sheets" style={{width:32,height:32,borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',background:'transparent',color:'rgba(255,255,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all 0.15s'}} onMouseEnter={e=>e.currentTarget.style.color='#818cf8'} onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.35)'}>
+            <span style={{animation:syncing?'spin 1s linear infinite':'none',display:'inline-block'}}><I.refresh/></span>
+          </button>
+          <div style={{display:'flex',gap:10}}>
           <div style={{background:'#12131f',border:'1px solid rgba(251,146,60,0.2)',borderRadius:10,padding:'8px 14px',textAlign:'center',minWidth:72}}>
             <div style={{fontSize:17,fontWeight:800,color:'#fb923c',lineHeight:1}}>🔥 {streak}</div>
             <div style={{fontSize:9,color:'rgba(255,255,255,0.3)',marginTop:3,letterSpacing:'0.05em'}}>СТРИК</div>
@@ -852,6 +912,7 @@ function PlannerPage(){
           <div style={{background:'#12131f',border:'1px solid rgba(74,222,128,0.2)',borderRadius:10,padding:'8px 14px',textAlign:'center',minWidth:72}}>
             <div style={{fontSize:17,fontWeight:800,color:'#4ade80',lineHeight:1}}>{weekTotal?Math.round(weekDone/weekTotal*100):0}%</div>
             <div style={{fontSize:9,color:'rgba(255,255,255,0.3)',marginTop:3,letterSpacing:'0.05em'}}>НЕДЕЛЯ</div>
+          </div>
           </div>
         </div>
       </div>
