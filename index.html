@@ -1213,7 +1213,7 @@ function InstaBotPage(){
                       <span style={{fontSize:11,padding:'3px 8px',borderRadius:20,background:p.active?'rgba(74,222,128,0.12)':'rgba(102,102,102,0.2)',color:p.active?cs.green:cs.muted,fontWeight:600}}>{p.active?'Активен':'Откл.'}</span>
                     </td>
                     <td style={{padding:'12px 14px'}}>
-                      <div style={{display:'flex',gap:6'}}>
+                      <div style={{display:'flex',gap:6}}>
                         <button onClick={()=>openDetail(p)} style={{...btn('rgba(129,140,248,0.14)',cs.accent),padding:'5px 10px',fontSize:11}}>Триггеры</button>
                         <button onClick={()=>doDeletePost(p.id)} style={{...btn('rgba(239,68,68,0.12)',cs.red),padding:'5px 10px',fontSize:11}}>✕</button>
                       </div>
