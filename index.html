@@ -171,6 +171,7 @@ const I={
   import:()=><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2v9"/><polyline points="4,7 8,11 12,7"/><path d="M2 14h12"/></svg>,
   planner:()=><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="12" height="12" rx="1.5"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="5" y1="10" x2="7" y2="10"/><line x1="5" y1="13" x2="9" y2="13"/></svg>,
   content:()=><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="14" height="8" rx="1.5"/><polygon points="6.5,6.5 6.5,9.5 10.5,8" fill="currentColor" stroke="none"/></svg>,
+  insta:()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
 };
 
 function Wave(){
@@ -1032,6 +1033,373 @@ function PlannerPage(){
   );
 }
 
+// ── Instagram ManyChat Bot ────────────────────────────────────────────────────
+const INSTA_URL_KEY='aai_insta_url';
+
+function InstaBotPage(){
+  const [botUrl,setBotUrl]=useState(()=>localStorage.getItem(INSTA_URL_KEY)||'');
+  const [view,setView]=useState('posts'); // posts | detail | leads | settings
+  const [posts,setPosts]=useState([]);
+  const [triggers,setTriggers]=useState([]);
+  const [leads,setLeads]=useState([]);
+  const [stats,setStats]=useState({posts:0,triggers:0,leads:0,today:0});
+  const [curPost,setCurPost]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const [tip,setTip]=useState('');
+  const [addPost,setAddPost]=useState(false);
+  const [addTrig,setAddTrig]=useState(false);
+  const [editTrig,setEditTrig]=useState(null);
+  const [newPTitle,setNewPTitle]=useState('');
+  const [newPId,setNewPId]=useState('');
+  const [tKw,setTKw]=useState('');const [tRep,setTRep]=useState('');const [tDm,setTDm]=useState('');
+  const [urlInput,setUrlInput]=useState(botUrl);
+  const [settingsData,setSettingsData]=useState({APP_ID:'',APP_SECRET:'',VERIFY_TOKEN:'insta_secret_777',INSTAGRAM_ACCOUNT_ID:''});
+  const [tokenOk,setTokenOk]=useState(false);
+
+  function toast(msg,err){setTip(err?'❌ '+msg:'✅ '+msg);setTimeout(()=>setTip(''),3000);}
+
+  async function botApi(path,opts={}){
+    const base=localStorage.getItem(INSTA_URL_KEY)||'';
+    if(!base){toast('Сначала укажи URL бэкенда в Настройках',true);throw new Error('no url');}
+    const r=await fetch(base+path,{headers:{'Content-Type':'application/json'},...opts});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||r.statusText);}
+    return r.json();
+  }
+
+  async function loadAll(){
+    if(!localStorage.getItem(INSTA_URL_KEY))return;
+    setLoading(true);
+    try{
+      const[s,p]=await Promise.all([botApi('/api/stats'),botApi('/api/posts')]);
+      setStats(s);setPosts(p);
+    }catch(e){}
+    setLoading(false);
+  }
+
+  useEffect(()=>{loadAll();},[]);
+
+  async function openDetail(post){
+    setCurPost(post);setView('detail');
+    try{const t=await botApi('/api/posts/'+post.id+'/triggers');setTriggers(t);}catch(e){}
+  }
+
+  async function openLeads(){
+    setView('leads');
+    try{const l=await botApi('/api/leads');setLeads(l);}catch(e){}
+  }
+
+  async function openSettings(){
+    setView('settings');
+    try{const s=await botApi('/api/settings');setSettingsData(s);setTokenOk(s.token_ok);}catch(e){}
+  }
+
+  async function doAddPost(){
+    if(!newPId.trim()){toast('Введи ID или ссылку',true);return;}
+    try{await botApi('/api/posts',{method:'POST',body:JSON.stringify({instagram_post_id:newPId,title:newPTitle,post_url:newPId.includes('http')?newPId:''})});
+      toast('Пост добавлен!');setAddPost(false);setNewPId('');setNewPTitle('');loadAll();}
+    catch(e){toast(e.message,true);}
+  }
+
+  async function doDeletePost(id){
+    if(!confirm('Удалить пост и все триггеры?'))return;
+    try{await botApi('/api/posts/'+id,{method:'DELETE'});toast('Удалено');loadAll();}
+    catch(e){toast(e.message,true);}
+  }
+
+  async function doAddTrig(){
+    if(!tKw.trim()||!tDm.trim()){toast('Заполни ключевое слово и DM',true);return;}
+    try{
+      if(editTrig){await botApi('/api/triggers/'+editTrig.id,{method:'PUT',body:JSON.stringify({keyword:tKw,reply_comment:tRep,dm_text:tDm,active:1})});toast('Триггер обновлён!');}
+      else{await botApi('/api/posts/'+curPost.id+'/triggers',{method:'POST',body:JSON.stringify({keyword:tKw,reply_comment:tRep,dm_text:tDm})});toast('Триггер добавлен!');}
+      setAddTrig(false);setEditTrig(null);setTKw('');setTRep('');setTDm('');
+      const t=await botApi('/api/posts/'+curPost.id+'/triggers');setTriggers(t);
+    }catch(e){toast(e.message,true);}
+  }
+
+  async function doToggleTrig(t,val){
+    try{await botApi('/api/triggers/'+t.id,{method:'PUT',body:JSON.stringify({keyword:t.keyword,reply_comment:t.reply_comment,dm_text:t.dm_text,active:val?1:0})});
+      const tr=await botApi('/api/posts/'+curPost.id+'/triggers');setTriggers(tr);}
+    catch(e){toast(e.message,true);}
+  }
+
+  async function doDeleteTrig(id){
+    if(!confirm('Удалить триггер?'))return;
+    try{await botApi('/api/triggers/'+id,{method:'DELETE'});toast('Удалено');
+      const t=await botApi('/api/posts/'+curPost.id+'/triggers');setTriggers(t);}
+    catch(e){toast(e.message,true);}
+  }
+
+  function openEditTrig(t){setEditTrig(t);setTKw(t.keyword);setTRep(t.reply_comment||'');setTDm(t.dm_text);setAddTrig(true);}
+
+  async function saveSettings(){
+    try{await botApi('/api/settings',{method:'POST',body:JSON.stringify(settingsData)});toast('Настройки сохранены!');openSettings();}
+    catch(e){toast(e.message,true);}
+  }
+
+  function saveUrl(){
+    const u=urlInput.trim().replace(/\/$/,'');
+    localStorage.setItem(INSTA_URL_KEY,u);setBotUrl(u);toast('URL сохранён');loadAll();
+  }
+
+  const cs={bg:'#0d0e1a',card:'#12131f',border:'rgba(255,255,255,0.08)',text:'#e8e8f4',muted:'rgba(255,255,255,0.3)',accent:'#818cf8',green:'#4ade80',red:'#ef4444',purple:'#a855f7'};
+  const card={background:cs.card,border:`1px solid ${cs.border}`,borderRadius:12};
+  const inp={width:'100%',padding:'9px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${cs.border}`,borderRadius:8,color:cs.text,fontSize:13,outline:'none',fontFamily:'Inter,sans-serif'};
+  const btn=(bg,col)=>({padding:'8px 16px',background:bg,color:col,border:'none',borderRadius:8,fontSize:13,fontWeight:600,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:6,fontFamily:'Inter,sans-serif'});
+
+  const navItems=[
+    {id:'posts',label:'Посты'},
+    {id:'leads',label:'Лиды'},
+    {id:'settings',label:'Настройки'},
+  ];
+
+  return(
+    <div style={{animation:'fadeUp 0.2s ease',color:cs.text}}>
+      {/* Header */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20,flexWrap:'wrap',gap:12}}>
+        <div>
+          <h1 style={{fontSize:18,fontWeight:700,marginBottom:4}}>Instagram Bot</h1>
+          <p style={{fontSize:13,color:cs.muted}}>ManyChat для своего Instagram</p>
+        </div>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          {tip&&<span style={{fontSize:12,color:tip.startsWith('❌')?cs.red:cs.green,fontFamily:'JetBrains Mono,monospace'}}>{tip}</span>}
+          <button onClick={loadAll} disabled={loading} style={{...btn('rgba(255,255,255,0.06)',cs.muted),border:`1px solid ${cs.border}`}}>
+            <span style={{animation:loading?'spin 1s linear infinite':'none',display:'inline-block'}}><I.refresh/></span>
+            Обновить
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}}>
+        {[['Постов',stats.posts,cs.accent],['Триггеров',stats.triggers,cs.purple],['Лидов всего',stats.leads,cs.green],['Сегодня',stats.today,'#fb923c']].map(([l,v,c])=>(
+          <div key={l} style={{...card,padding:'14px 16px'}}>
+            <div style={{fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:6}}>{l}</div>
+            <div style={{fontSize:28,fontWeight:800,color:c,fontFamily:'JetBrains Mono,monospace'}}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Inner nav */}
+      <div style={{display:'flex',gap:6,marginBottom:16}}>
+        {navItems.map(n=>(
+          <button key={n.id} onClick={()=>{if(n.id==='leads')openLeads();else if(n.id==='settings')openSettings();else setView('posts');}} style={{padding:'7px 14px',background:view===n.id||(!['leads','settings'].includes(view)&&n.id==='posts')?'rgba(129,140,248,0.18)':'rgba(255,255,255,0.04)',border:`1.5px solid ${view===n.id?'rgba(129,140,248,0.4)':cs.border}`,borderRadius:8,color:view===n.id?cs.accent:cs.muted,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s',fontFamily:'Inter,sans-serif'}}>{n.label}</button>
+        ))}
+      </div>
+
+      {/* POSTS VIEW */}
+      {(view==='posts')&&(
+        <div>
+          <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
+            <button onClick={()=>setAddPost(true)} style={btn('#6366f1','#fff')}><I.plus/>Добавить пост</button>
+          </div>
+          <div style={{...card,overflow:'hidden'}}>
+            <table style={{width:'100%',borderCollapse:'collapse'}}>
+              <thead>
+                <tr style={{background:'rgba(255,255,255,0.03)'}}>
+                  {['Название','Post ID','Триггеров','Лидов','Статус',''].map(h=>(
+                    <th key={h} style={{textAlign:'left',padding:'10px 14px',fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.05em',borderBottom:`1px solid ${cs.border}`}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {posts.length===0&&<tr><td colSpan={6} style={{textAlign:'center',padding:'40px',color:cs.muted,fontSize:13}}>Нет постов. Добавь первый!</td></tr>}
+                {posts.map(p=>(
+                  <tr key={p.id} style={{borderBottom:`1px solid ${cs.border}`}}>
+                    <td style={{padding:'12px 14px',fontWeight:600}}>{p.title||'Без названия'}</td>
+                    <td style={{padding:'12px 14px',fontFamily:'JetBrains Mono,monospace',fontSize:11,color:cs.muted}}>{p.instagram_post_id}</td>
+                    <td style={{padding:'12px 14px',color:cs.accent,fontWeight:700}}>{p.trigger_count}</td>
+                    <td style={{padding:'12px 14px'}}>{p.lead_count}</td>
+                    <td style={{padding:'12px 14px'}}>
+                      <span style={{fontSize:11,padding:'3px 8px',borderRadius:20,background:p.active?'rgba(74,222,128,0.12)':'rgba(102,102,102,0.2)',color:p.active?cs.green:cs.muted,fontWeight:600}}>{p.active?'Активен':'Откл.'}</span>
+                    </td>
+                    <td style={{padding:'12px 14px'}}>
+                      <div style={{display:'flex',gap:6'}}>
+                        <button onClick={()=>openDetail(p)} style={{...btn('rgba(129,140,248,0.14)',cs.accent),padding:'5px 10px',fontSize:11}}>Триггеры</button>
+                        <button onClick={()=>doDeletePost(p.id)} style={{...btn('rgba(239,68,68,0.12)',cs.red),padding:'5px 10px',fontSize:11}}>✕</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* DETAIL VIEW */}
+      {view==='detail'&&curPost&&(
+        <div>
+          <button onClick={()=>setView('posts')} style={{...btn('transparent',cs.muted),border:'none',marginBottom:14,padding:'4px 0',fontSize:13}}>← Назад к постам</button>
+          <div style={{...card,padding:'16px 20px',marginBottom:16}}>
+            <div style={{fontWeight:600,fontSize:16,marginBottom:3}}>{curPost.title||'Без названия'}</div>
+            <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:11,color:cs.muted}}>ID: {curPost.instagram_post_id}</div>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+            <span style={{fontWeight:600}}>Триггеры</span>
+            <button onClick={()=>{setEditTrig(null);setTKw('');setTRep('');setTDm('');setAddTrig(true);}} style={btn('#6366f1','#fff')}><I.plus/>Добавить триггер</button>
+          </div>
+          <div style={{...card,overflow:'hidden'}}>
+            <table style={{width:'100%',borderCollapse:'collapse'}}>
+              <thead>
+                <tr style={{background:'rgba(255,255,255,0.03)'}}>
+                  {['Ключевое слово','Ответ в коммент','DM текст','Вкл',''].map(h=>(
+                    <th key={h} style={{textAlign:'left',padding:'10px 14px',fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.05em',borderBottom:`1px solid ${cs.border}`}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {triggers.length===0&&<tr><td colSpan={5} style={{textAlign:'center',padding:'40px',color:cs.muted,fontSize:13}}>Нет триггеров. Добавь первый!</td></tr>}
+                {triggers.map(t=>(
+                  <tr key={t.id} style={{borderBottom:`1px solid ${cs.border}`}}>
+                    <td style={{padding:'12px 14px'}}><span style={{background:'rgba(129,140,248,0.15)',color:cs.accent,padding:'3px 8px',borderRadius:6,fontFamily:'JetBrains Mono,monospace',fontSize:12}}>{t.keyword}</span></td>
+                    <td style={{padding:'12px 14px',color:cs.muted,fontSize:12}}>{t.reply_comment||'—'}</td>
+                    <td style={{padding:'12px 14px',fontSize:12,maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.dm_text}</td>
+                    <td style={{padding:'12px 14px'}}>
+                      <input type="checkbox" checked={!!t.active} onChange={e=>doToggleTrig(t,e.target.checked)} style={{width:16,height:16,cursor:'pointer',accentColor:cs.accent}}/>
+                    </td>
+                    <td style={{padding:'12px 14px'}}>
+                      <div style={{display:'flex',gap:5}}>
+                        <button onClick={()=>openEditTrig(t)} style={{...btn('rgba(255,255,255,0.06)',cs.muted),padding:'4px 9px',fontSize:11}}>Изм.</button>
+                        <button onClick={()=>doDeleteTrig(t.id)} style={{...btn('rgba(239,68,68,0.1)',cs.red),padding:'4px 9px',fontSize:11}}>✕</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* LEADS VIEW */}
+      {view==='leads'&&(
+        <div>
+          <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
+            <a href={(localStorage.getItem(INSTA_URL_KEY)||'')+'/api/leads/export'} target="_blank" rel="noreferrer" style={{...btn('rgba(255,255,255,0.06)',cs.muted),border:`1px solid ${cs.border}`,textDecoration:'none'}}><I.import/>Экспорт CSV</a>
+          </div>
+          <div style={{...card,overflow:'hidden'}}>
+            <table style={{width:'100%',borderCollapse:'collapse'}}>
+              <thead>
+                <tr style={{background:'rgba(255,255,255,0.03)'}}>
+                  {['Username','Ключевое слово','Пост','Комментарий','Дата'].map(h=>(
+                    <th key={h} style={{textAlign:'left',padding:'10px 14px',fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.05em',borderBottom:`1px solid ${cs.border}`}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {leads.length===0&&<tr><td colSpan={5} style={{textAlign:'center',padding:'40px',color:cs.muted,fontSize:13}}>Лидов пока нет</td></tr>}
+                {leads.map((l,i)=>(
+                  <tr key={i} style={{borderBottom:`1px solid ${cs.border}`}}>
+                    <td style={{padding:'12px 14px',fontWeight:600}}>@{l.username||'—'}</td>
+                    <td style={{padding:'12px 14px'}}><span style={{background:'rgba(129,140,248,0.15)',color:cs.accent,padding:'3px 8px',borderRadius:6,fontFamily:'JetBrains Mono,monospace',fontSize:11}}>{l.keyword||'—'}</span></td>
+                    <td style={{padding:'12px 14px',fontSize:12,color:cs.muted}}>{l.post_title||'—'}</td>
+                    <td style={{padding:'12px 14px',fontSize:12,color:cs.muted,maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.comment_text||''}</td>
+                    <td style={{padding:'12px 14px',fontSize:11,color:cs.muted,fontFamily:'JetBrains Mono,monospace'}}>{l.triggered_at?l.triggered_at.slice(0,16):''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* SETTINGS VIEW */}
+      {view==='settings'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div style={{...card,padding:'20px 24px'}}>
+            <div style={{fontWeight:600,fontSize:14,marginBottom:14}}>URL бэкенда (Render)</div>
+            <div style={{display:'flex',gap:8}}>
+              <input style={inp} value={urlInput} onChange={e=>setUrlInput(e.target.value)} placeholder="https://insta-manychat.onrender.com"/>
+              <button onClick={saveUrl} style={btn('#6366f1','#fff')}>Сохранить</button>
+            </div>
+            <p style={{fontSize:11,color:cs.muted,marginTop:6}}>Вставь URL который выдаст Render после деплоя</p>
+          </div>
+          <div style={{...card,padding:'20px 24px'}}>
+            <div style={{fontWeight:600,fontSize:14,marginBottom:14}}>Meta App настройки</div>
+            {[['APP_ID','App ID','1234567890'],['APP_SECRET','App Secret','••••'],['VERIFY_TOKEN','Verify Token','insta_secret_777'],['INSTAGRAM_ACCOUNT_ID','Account ID','17841...']].map(([k,label,ph])=>(
+              <div key={k} style={{marginBottom:12}}>
+                <label style={{display:'block',fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:4}}>{label}</label>
+                <input style={inp} value={settingsData[k]||''} onChange={e=>setSettingsData(p=>({...p,[k]:e.target.value}))} placeholder={ph} type={k==='APP_SECRET'?'password':'text'}/>
+              </div>
+            ))}
+            <button onClick={saveSettings} style={btn('#6366f1','#fff')}>Сохранить настройки</button>
+          </div>
+          <div style={{...card,padding:'20px 24px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+              <div style={{fontWeight:600,fontSize:14}}>Авторизация Instagram</div>
+              <span style={{fontSize:11,padding:'4px 10px',borderRadius:20,background:tokenOk?'rgba(74,222,128,0.12)':'rgba(239,68,68,0.12)',color:tokenOk?cs.green:cs.red,fontWeight:600}}>{tokenOk?'✓ Токен активен':'✗ Нет токена'}</span>
+            </div>
+            <p style={{fontSize:13,color:cs.muted,marginBottom:12}}>После сохранения App ID и Secret — нажми для авторизации</p>
+            <a href={(localStorage.getItem(INSTA_URL_KEY)||'')+'/auth'} target="_blank" rel="noreferrer" style={{...btn('linear-gradient(135deg,#a855f7,#7c3aed)','#fff'),textDecoration:'none',display:'inline-flex'}}>
+              <I.insta/>Авторизоваться через Instagram
+            </a>
+          </div>
+          <div style={{...card,padding:'20px 24px'}}>
+            <div style={{fontWeight:600,fontSize:14,marginBottom:8}}>Webhook URL</div>
+            <p style={{fontSize:12,color:cs.muted,marginBottom:10}}>Вставь в Meta Developer → Webhooks:</p>
+            <input style={{...inp,fontFamily:'JetBrains Mono,monospace',cursor:'pointer'}} readOnly value={(localStorage.getItem(INSTA_URL_KEY)||'твой-url.onrender.com')+'/webhook'} onClick={e=>e.target.select()}/>
+            <p style={{fontSize:11,color:cs.muted,marginTop:6}}>Verify Token: {settingsData.VERIFY_TOKEN||'insta_secret_777'}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ADD POST MODAL */}
+      {addPost&&(
+        <div className="modal-wrap" onClick={e=>e.target===e.currentTarget&&setAddPost(false)}>
+          <div className="modal-box" style={{width:460,padding:'1.75rem'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
+              <div style={{fontSize:15,fontWeight:700,color:'#e8e8f4'}}>Добавить пост / рилс</div>
+              <button onClick={()=>setAddPost(false)} style={{width:28,height:28,background:'rgba(255,255,255,0.05)',border:`1px solid ${cs.border}`,borderRadius:7,color:cs.muted,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><I.close/></button>
+            </div>
+            <div style={{marginBottom:12}}>
+              <label style={{display:'block',fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>Название</label>
+              <input style={{...inp}} value={newPTitle} onChange={e=>setNewPTitle(e.target.value)} placeholder="Рилс про AI автоматизацию"/>
+            </div>
+            <div style={{marginBottom:18}}>
+              <label style={{display:'block',fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>Ссылка или ID поста *</label>
+              <input style={{...inp}} value={newPId} onChange={e=>setNewPId(e.target.value)} placeholder="https://www.instagram.com/reel/ABC123/" autoFocus/>
+              <p style={{fontSize:11,color:cs.muted,marginTop:4}}>Вставь ссылку — ID извлечётся автоматически</p>
+            </div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button className="btn btn-outline" onClick={()=>setAddPost(false)}>Отмена</button>
+              <button className="btn btn-navy" onClick={doAddPost}><I.check/>Добавить</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD/EDIT TRIGGER MODAL */}
+      {addTrig&&(
+        <div className="modal-wrap" onClick={e=>e.target===e.currentTarget&&(setAddTrig(false),setEditTrig(null))}>
+          <div className="modal-box" style={{width:480,padding:'1.75rem'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
+              <div style={{fontSize:15,fontWeight:700,color:'#e8e8f4'}}>{editTrig?'Изменить триггер':'Добавить триггер'}</div>
+              <button onClick={()=>{setAddTrig(false);setEditTrig(null);}} style={{width:28,height:28,background:'rgba(255,255,255,0.05)',border:`1px solid ${cs.border}`,borderRadius:7,color:cs.muted,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><I.close/></button>
+            </div>
+            <div style={{marginBottom:12}}>
+              <label style={{display:'block',fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>Ключевое слово *</label>
+              <input style={{...inp}} value={tKw} onChange={e=>setTKw(e.target.value)} placeholder="+, хочу, цена, курс..." autoFocus/>
+              <p style={{fontSize:11,color:cs.muted,marginTop:4}}>Регистр не важен. Срабатывает если слово есть в комментарии</p>
+            </div>
+            <div style={{marginBottom:12}}>
+              <label style={{display:'block',fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>Ответ в комментарий (необяз.)</label>
+              <input style={{...inp}} value={tRep} onChange={e=>setTRep(e.target.value)} placeholder="Написал тебе в директ! ✉️"/>
+            </div>
+            <div style={{marginBottom:18}}>
+              <label style={{display:'block',fontSize:11,fontWeight:600,color:cs.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>Текст DM *</label>
+              <textarea style={{...inp,resize:'vertical',minHeight:90,lineHeight:1.6}} value={tDm} onChange={e=>setTDm(e.target.value)} placeholder="Привет! Спасибо за интерес 👋&#10;&#10;Вот ссылка: ..."/>
+            </div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button className="btn btn-outline" onClick={()=>{setAddTrig(false);setEditTrig(null);}}>Отмена</button>
+              <button className="btn btn-navy" onClick={doAddTrig}><I.check/>{editTrig?'Сохранить':'Добавить'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App(){
   const [leads,setLeads]=useState(()=>ls(SK)||[]);
   const [page,setPage]=useState('kanban');
@@ -1139,6 +1507,7 @@ function App(){
     {id:'goal',icon:<I.goal/>,label:'Цель'},
     {id:'planner',icon:<I.planner/>,label:'Планер'},
     {id:'content',icon:<I.content/>,label:'Контент'},
+    {id:'instabot',icon:<I.insta/>,label:'Insta Bot'},
   ];
 
   return(
@@ -1190,6 +1559,7 @@ function App(){
           {page==='goal'&&<GoalPage/>}
           {page==='planner'&&<PlannerPage/>}
           {page==='content'&&<ContentPage/>}
+          {page==='instabot'&&<InstaBotPage/>}
         </div>
         <Wave/>
       </main>
