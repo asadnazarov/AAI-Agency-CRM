@@ -17,8 +17,10 @@ app.add_middleware(
 )
 
 GRAPH_API = "https://graph.facebook.com/v21.0"
-DB_PATH = os.getenv("DB_PATH", "/data/bot.db" if os.path.exists("/data") else "data/bot.db")
-os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+DB_PATH = os.getenv("DB_PATH", "bot.db")
+_db_dir = os.path.dirname(DB_PATH)
+if _db_dir:
+    os.makedirs(_db_dir, exist_ok=True)
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
