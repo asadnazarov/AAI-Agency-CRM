@@ -177,6 +177,14 @@ async def handle_webhook(request: Request):
                 _handle_comment(change.get("value", {}))
     return {"status": "ok"}
 
+def _get_media_shortcode(media_id: str) -> str:
+    token = get_token()
+    if not token:
+        return ""
+    r = http.get(f"https://graph.instagram.com/v21.0/{media_id}",
+                 params={"fields": "shortcode", "access_token": token})
+    return r.json().get("shortcode", "")
+
 def _handle_comment(value: dict):
     comment_id = value.get("id")
     comment_text = value.get("text", "")
@@ -187,10 +195,19 @@ def _handle_comment(value: dict):
         return
     print(f"💬 [{media_id}] {commenter_name}: '{comment_text}'")
     with db() as con:
+        # Try exact match first (numeric ID), then try shortcode
         post = con.execute(
             "SELECT id FROM posts WHERE instagram_post_id=? AND active=1", (media_id,)
         ).fetchone()
         if not post:
+            shortcode = _get_media_shortcode(media_id)
+            print(f"🔍 shortcode lookup: {media_id} → {shortcode}")
+            if shortcode:
+                post = con.execute(
+                    "SELECT id FROM posts WHERE instagram_post_id=? AND active=1", (shortcode,)
+                ).fetchone()
+        if not post:
+            print(f"⚠️ No active post found for media {media_id}")
             return
         post_id = post["id"]
         triggers = con.execute(
@@ -215,10 +232,12 @@ def _reply_comment(comment_id: str, text: str):
     print(f"{'✅' if r.ok else '❌'} reply")
 
 def _send_dm(user_id: str, text: str):
-    r = http.post(f"{GRAPH_API}/me/messages",
+    account_id = get_setting("INSTAGRAM_ACCOUNT_ID")
+    token = get_token()
+    r = http.post(f"https://graph.instagram.com/v21.0/{account_id}/messages",
                   json={"recipient": {"id": user_id}, "message": {"text": text}},
-                  params={"access_token": get_token()})
-    print(f"{'✅' if r.ok else '❌'} DM")
+                  params={"access_token": token})
+    print(f"{'✅' if r.ok else '❌'} DM → {r.status_code}: {r.text[:200]}")
 
 # ── Health ────────────────────────────────────────────────────────────────────
 
