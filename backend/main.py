@@ -1,9 +1,11 @@
-import os, sqlite3, json, hmac, hashlib, threading, time, io, re, csv
+import os, json, hmac, hashlib, threading, time, io, re, csv
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, StreamingResponse
 from dotenv import load_dotenv
 import requests as http
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 load_dotenv()
 
@@ -17,58 +19,58 @@ app.add_middleware(
 )
 
 GRAPH_API = "https://graph.facebook.com/v21.0"
-DB_PATH = os.getenv("DB_PATH", "bot.db")
-_db_dir = os.path.dirname(DB_PATH)
-if _db_dir:
-    os.makedirs(_db_dir, exist_ok=True)
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
 def db():
-    con = sqlite3.connect(DB_PATH)
-    con.row_factory = sqlite3.Row
-    con.execute("PRAGMA foreign_keys = ON")
+    con = psycopg2.connect(DATABASE_URL)
     return con
 
 def init_db():
     with db() as con:
-        con.executescript("""
+        cur = con.cursor()
+        cur.execute("""
         CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             instagram_post_id TEXT UNIQUE NOT NULL,
             post_url TEXT DEFAULT '',
             title TEXT DEFAULT '',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             active INTEGER DEFAULT 1
-        );
+        )""")
+        cur.execute("""
         CREATE TABLE IF NOT EXISTS triggers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
             keyword TEXT NOT NULL,
             reply_comment TEXT DEFAULT '',
             dm_text TEXT NOT NULL DEFAULT '',
             active INTEGER DEFAULT 1,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""")
+        cur.execute("""
         CREATE TABLE IF NOT EXISTS leads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             trigger_id INTEGER REFERENCES triggers(id),
             post_id INTEGER,
             instagram_user_id TEXT,
             username TEXT DEFAULT '',
             comment_text TEXT DEFAULT '',
-            triggered_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
+            triggered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""")
+        cur.execute("""
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
             value TEXT DEFAULT ''
-        );
-        INSERT OR IGNORE INTO settings VALUES ('APP_ID', '');
-        INSERT OR IGNORE INTO settings VALUES ('APP_SECRET', '');
-        INSERT OR IGNORE INTO settings VALUES ('VERIFY_TOKEN', 'insta_secret_777');
-        INSERT OR IGNORE INTO settings VALUES ('PAGE_ACCESS_TOKEN', '');
-        INSERT OR IGNORE INTO settings VALUES ('INSTAGRAM_ACCOUNT_ID', '');
-        """)
+        )""")
+        for k, v in [
+            ('APP_ID', ''), ('APP_SECRET', ''),
+            ('VERIFY_TOKEN', 'insta_secret_777'),
+            ('PAGE_ACCESS_TOKEN', ''), ('INSTAGRAM_ACCOUNT_ID', ''),
+        ]:
+            cur.execute("INSERT INTO settings(key,value) VALUES(%s,%s) ON CONFLICT(key) DO NOTHING", (k, v))
+        con.commit()
 
 init_db()
 
@@ -76,12 +78,16 @@ init_db()
 
 def get_setting(key: str) -> str:
     with db() as con:
-        row = con.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT value FROM settings WHERE key=%s", (key,))
+        row = cur.fetchone()
         return (row["value"] if row else None) or os.getenv(key, "")
 
 def set_setting(key: str, value: str):
     with db() as con:
-        con.execute("INSERT OR REPLACE INTO settings VALUES (?,?)", (key, value))
+        cur = con.cursor()
+        cur.execute("INSERT INTO settings(key,value) VALUES(%s,%s) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value", (key, value))
+        con.commit()
 
 def get_token() -> str:
     return get_setting("PAGE_ACCESS_TOKEN")
@@ -195,24 +201,21 @@ def _handle_comment(value: dict):
         return
     print(f"💬 [{media_id}] {commenter_name}: '{comment_text}'")
     with db() as con:
-        # Try exact match first (numeric ID), then try shortcode
-        post = con.execute(
-            "SELECT id FROM posts WHERE instagram_post_id=? AND active=1", (media_id,)
-        ).fetchone()
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT id FROM posts WHERE instagram_post_id=%s AND active=1", (media_id,))
+        post = cur.fetchone()
         if not post:
             shortcode = _get_media_shortcode(media_id)
             print(f"🔍 shortcode lookup: {media_id} → {shortcode}")
             if shortcode:
-                post = con.execute(
-                    "SELECT id FROM posts WHERE instagram_post_id=? AND active=1", (shortcode,)
-                ).fetchone()
+                cur.execute("SELECT id FROM posts WHERE instagram_post_id=%s AND active=1", (shortcode,))
+                post = cur.fetchone()
         if not post:
             print(f"⚠️ No active post found for media {media_id}")
             return
         post_id = post["id"]
-        triggers = con.execute(
-            "SELECT * FROM triggers WHERE post_id=? AND active=1", (post_id,)
-        ).fetchall()
+        cur.execute("SELECT * FROM triggers WHERE post_id=%s AND active=1", (post_id,))
+        triggers = cur.fetchall()
         for t in triggers:
             if t["keyword"].lower() in comment_text.lower():
                 _processed.add(comment_id)
@@ -220,10 +223,11 @@ def _handle_comment(value: dict):
                 if t["reply_comment"]:
                     _reply_comment(comment_id, t["reply_comment"])
                 _send_dm(commenter_id, t["dm_text"])
-                con.execute(
-                    "INSERT INTO leads (trigger_id,post_id,instagram_user_id,username,comment_text) VALUES (?,?,?,?,?)",
+                cur.execute(
+                    "INSERT INTO leads (trigger_id,post_id,instagram_user_id,username,comment_text) VALUES (%s,%s,%s,%s,%s)",
                     (t["id"], post_id, commenter_id, commenter_name, comment_text)
                 )
+                con.commit()
                 break
 
 def _reply_comment(comment_id: str, text: str):
@@ -255,14 +259,15 @@ async def root():
 @app.get("/api/posts")
 async def api_list_posts():
     with db() as con:
-        rows = con.execute("""
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
             SELECT p.*, COUNT(DISTINCT t.id) AS trigger_count, COUNT(DISTINCT l.id) AS lead_count
             FROM posts p
             LEFT JOIN triggers t ON t.post_id=p.id AND t.active=1
             LEFT JOIN leads l ON l.post_id=p.id
             GROUP BY p.id ORDER BY p.created_at DESC
-        """).fetchall()
-        return [dict(r) for r in rows]
+        """)
+        return [dict(r) for r in cur.fetchall()]
 
 @app.post("/api/posts")
 async def api_add_post(request: Request):
@@ -276,27 +281,34 @@ async def api_add_post(request: Request):
     else:
         post_id = raw
     with db() as con:
+        cur = con.cursor()
         try:
-            cur = con.execute(
-                "INSERT INTO posts (instagram_post_id,post_url,title) VALUES (?,?,?)",
+            cur.execute(
+                "INSERT INTO posts (instagram_post_id,post_url,title) VALUES (%s,%s,%s) RETURNING id",
                 (post_id, data.get("post_url",""), data.get("title",""))
             )
-            return {"id": cur.lastrowid, "instagram_post_id": post_id}
-        except sqlite3.IntegrityError:
+            new_id = cur.fetchone()[0]
+            con.commit()
+            return {"id": new_id, "instagram_post_id": post_id}
+        except psycopg2.IntegrityError:
             raise HTTPException(409, "Post already added")
 
 @app.put("/api/posts/{pid}")
 async def api_update_post(pid: int, request: Request):
     data = await request.json()
     with db() as con:
-        con.execute("UPDATE posts SET title=?,active=? WHERE id=?",
+        cur = con.cursor()
+        cur.execute("UPDATE posts SET title=%s,active=%s WHERE id=%s",
                     (data.get("title",""), int(data.get("active",1)), pid))
+        con.commit()
     return {"ok": True}
 
 @app.delete("/api/posts/{pid}")
 async def api_delete_post(pid: int):
     with db() as con:
-        con.execute("DELETE FROM posts WHERE id=?", (pid,))
+        cur = con.cursor()
+        cur.execute("DELETE FROM posts WHERE id=%s", (pid,))
+        con.commit()
     return {"ok": True}
 
 # ── API — Triggers ────────────────────────────────────────────────────────────
@@ -304,10 +316,9 @@ async def api_delete_post(pid: int):
 @app.get("/api/posts/{pid}/triggers")
 async def api_list_triggers(pid: int):
     with db() as con:
-        rows = con.execute(
-            "SELECT * FROM triggers WHERE post_id=? ORDER BY created_at DESC", (pid,)
-        ).fetchall()
-        return [dict(r) for r in rows]
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM triggers WHERE post_id=%s ORDER BY created_at DESC", (pid,))
+        return [dict(r) for r in cur.fetchall()]
 
 @app.post("/api/posts/{pid}/triggers")
 async def api_add_trigger(pid: int, request: Request):
@@ -315,26 +326,33 @@ async def api_add_trigger(pid: int, request: Request):
     if not data.get("keyword") or not data.get("dm_text"):
         raise HTTPException(400, "keyword and dm_text required")
     with db() as con:
-        cur = con.execute(
-            "INSERT INTO triggers (post_id,keyword,reply_comment,dm_text) VALUES (?,?,?,?)",
+        cur = con.cursor()
+        cur.execute(
+            "INSERT INTO triggers (post_id,keyword,reply_comment,dm_text) VALUES (%s,%s,%s,%s) RETURNING id",
             (pid, data["keyword"].strip(), data.get("reply_comment",""), data["dm_text"])
         )
-        return {"id": cur.lastrowid}
+        new_id = cur.fetchone()[0]
+        con.commit()
+        return {"id": new_id}
 
 @app.put("/api/triggers/{tid}")
 async def api_update_trigger(tid: int, request: Request):
     data = await request.json()
     with db() as con:
-        con.execute(
-            "UPDATE triggers SET keyword=?,reply_comment=?,dm_text=?,active=? WHERE id=?",
+        cur = con.cursor()
+        cur.execute(
+            "UPDATE triggers SET keyword=%s,reply_comment=%s,dm_text=%s,active=%s WHERE id=%s",
             (data.get("keyword"), data.get("reply_comment",""), data.get("dm_text"), int(data.get("active",1)), tid)
         )
+        con.commit()
     return {"ok": True}
 
 @app.delete("/api/triggers/{tid}")
 async def api_delete_trigger(tid: int):
     with db() as con:
-        con.execute("DELETE FROM triggers WHERE id=?", (tid,))
+        cur = con.cursor()
+        cur.execute("DELETE FROM triggers WHERE id=%s", (tid,))
+        con.commit()
     return {"ok": True}
 
 # ── API — Leads ───────────────────────────────────────────────────────────────
@@ -342,33 +360,36 @@ async def api_delete_trigger(tid: int):
 @app.get("/api/leads")
 async def api_list_leads(post_id: int = None, limit: int = 200):
     with db() as con:
+        cur = con.cursor(cursor_factory=RealDictCursor)
         if post_id:
-            rows = con.execute("""
+            cur.execute("""
                 SELECT l.*, t.keyword, p.title AS post_title FROM leads l
                 LEFT JOIN triggers t ON t.id=l.trigger_id
                 LEFT JOIN posts p ON p.id=l.post_id
-                WHERE l.post_id=? ORDER BY l.triggered_at DESC LIMIT ?
-            """, (post_id, limit)).fetchall()
+                WHERE l.post_id=%s ORDER BY l.triggered_at DESC LIMIT %s
+            """, (post_id, limit))
         else:
-            rows = con.execute("""
+            cur.execute("""
                 SELECT l.*, t.keyword, p.title AS post_title FROM leads l
                 LEFT JOIN triggers t ON t.id=l.trigger_id
                 LEFT JOIN posts p ON p.id=l.post_id
-                ORDER BY l.triggered_at DESC LIMIT ?
-            """, (limit,)).fetchall()
-        return [dict(r) for r in rows]
+                ORDER BY l.triggered_at DESC LIMIT %s
+            """, (limit,))
+        return [dict(r) for r in cur.fetchall()]
 
 @app.get("/api/leads/export")
 async def api_export_leads():
     with db() as con:
-        rows = con.execute("""
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
             SELECT l.username, l.instagram_user_id, l.comment_text,
                    t.keyword, p.title AS post_title, l.triggered_at
             FROM leads l
             LEFT JOIN triggers t ON t.id=l.trigger_id
             LEFT JOIN posts p ON p.id=l.post_id
             ORDER BY l.triggered_at DESC
-        """).fetchall()
+        """)
+        rows = cur.fetchall()
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["Username","User ID","Comment","Keyword","Post","Date"])
@@ -385,19 +406,21 @@ async def api_export_leads():
 @app.get("/api/stats")
 async def api_stats():
     with db() as con:
-        return {
-            "posts":    con.execute("SELECT COUNT(*) FROM posts WHERE active=1").fetchone()[0],
-            "triggers": con.execute("SELECT COUNT(*) FROM triggers WHERE active=1").fetchone()[0],
-            "leads":    con.execute("SELECT COUNT(*) FROM leads").fetchone()[0],
-            "today":    con.execute("SELECT COUNT(*) FROM leads WHERE date(triggered_at)=date('now')").fetchone()[0],
-        }
+        cur = con.cursor()
+        cur.execute("SELECT COUNT(*) FROM posts WHERE active=1"); posts = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM triggers WHERE active=1"); trigs = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM leads"); leads = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM leads WHERE triggered_at::date = CURRENT_DATE"); today = cur.fetchone()[0]
+        return {"posts": posts, "triggers": trigs, "leads": leads, "today": today}
 
 # ── API — Settings ────────────────────────────────────────────────────────────
 
 @app.get("/api/settings")
 async def api_get_settings():
     with db() as con:
-        rows = con.execute("SELECT key, value FROM settings").fetchall()
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT key, value FROM settings")
+        rows = cur.fetchall()
     result = {r["key"]: r["value"] for r in rows}
     tok = result.get("PAGE_ACCESS_TOKEN", "")
     result["PAGE_ACCESS_TOKEN"] = (tok[:20] + "…") if len(tok) > 20 else tok
@@ -409,7 +432,9 @@ async def api_save_settings(request: Request):
     data = await request.json()
     allowed = {"APP_ID","APP_SECRET","VERIFY_TOKEN","INSTAGRAM_ACCOUNT_ID","PAGE_ACCESS_TOKEN"}
     with db() as con:
+        cur = con.cursor()
         for k, v in data.items():
             if k in allowed:
-                con.execute("INSERT OR REPLACE INTO settings VALUES (?,?)", (k, v))
+                cur.execute("INSERT INTO settings(key,value) VALUES(%s,%s) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value", (k, v))
+        con.commit()
     return {"ok": True}
